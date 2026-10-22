@@ -1,0 +1,53 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "firered-ai-switch"
+version = "1.0.0"
+description = "An AI that plays Pokémon FireRed on a real Nintendo Switch: sees through a capture card, plays through an emulated Bluetooth controller."
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "xhinzz" }]
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.2",
+    "opencv-python>=4.10",
+    "pillow>=11",
+    "claude-agent-sdk>=0.2",
+]
+
+[project.optional-dependencies]
+openai = ["openai>=1.60"]
+gemini = ["google-genai>=1.0"]
+painel = ["pywebview>=5"]
+dev = ["pytest>=8", "ruff>=0.8"]
+
+[project.scripts]
+fireredia = "fireredia.jogar:executar"
+fireredia-ace = "fireredia.ace.__main__:main"
+fireredia-missoes = "fireredia.missoes.__main__:main"
+fireredia-painel = "fireredia.painel.app:main"
+
+[tool.setuptools.packages.find]
+include = ["fireredia*"]
+
+[tool.setuptools.package-data]
+"fireredia.painel" = ["painel.html"]
+"fireredia.ace" = ["gerador.js"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["dados/pokefirered"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP"]
+ignore = ["E501"]  # prompts e comentários longos; o formatador cuida do código
+
+[tool.ruff.lint.isort]
+known-first-party = ["fireredia"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

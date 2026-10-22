@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FireRed IA</title>
+<style>
+  :root {
+    --bg: #0d0f13; --card: #151920; --card2: #1b2029; --linha: #262c37; --texto: #eaedf3; --sub: #96a0b2;
+    --fogo: #ff6b3d; --ok: #2fb67c; --alerta: #f2a93b; --perigo: #e5484d; --azul: #4f8cff; --roxo: #a374ff; --ouro: #e9c46a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--texto); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
+  img.px, .px { image-rendering: pixelated; }
+  header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+           padding: 12px 20px; background: rgba(13, 15, 19, .92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--linha); }
+  h1 { margin: 0; font-size: 18px; }
+  h1 span { color: var(--fogo); }
+  .pilula { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #2a2f3a; color: var(--sub); }
+  .pilula.jogando { background: rgba(47, 182, 124, .15); color: var(--ok); }
+  .pilula.erro { background: rgba(229, 72, 77, .15); color: var(--perigo); }
+  .meta { color: var(--sub); font-size: 12px; display: flex; gap: 14px; flex-wrap: wrap; }
+  .meta b { color: var(--texto); font-variant-numeric: tabular-nums; }
+  .botoes { margin-left: auto; display: flex; gap: 8px; }
+  button { font: inherit; font-weight: 600; border: 1px solid var(--linha); border-radius: 8px; padding: 6px 14px; cursor: pointer;
+           background: var(--card2); color: var(--texto); }
+  button.jogar { background: var(--ok); border-color: var(--ok); color: #04150d; }
+  button.parar { background: transparent; color: var(--perigo); border-color: rgba(229, 72, 77, .5); }
+  button:disabled { opacity: .4; cursor: default; }
+  main { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; padding: 14px 20px 30px; }
+  .card { background: var(--card); border: 1px solid var(--linha); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+  .card h2 { margin: 0 0 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .9px; color: var(--sub); font-weight: 600;
+             display: flex; justify-content: space-between; gap: 8px; }
+  .card h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
+  .c5 { grid-column: span 5; } .c7 { grid-column: span 7; } .c12 { grid-column: span 12; } .c6 { grid-column: span 6; }
+  .c4 { grid-column: span 4; } .c8 { grid-column: span 8; }
+  #tela { width: 100%; aspect-ratio: 3 / 2; border-radius: 8px; background: #000; display: block; }
+  .local { margin-top: 10px; font-size: 15px; font-weight: 600; }
+  .local small { color: var(--sub); font-weight: 400; margin-left: 6px; }
+  #objetivo { font-size: 17px; font-weight: 650; margin-bottom: 4px; }
+  #motivo { color: var(--sub); font-size: 13px; margin-bottom: 10px; }
+  #estrategia { font-size: 13px; white-space: pre-wrap; background: var(--card2); border-left: 3px solid var(--roxo);
+                border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
+  #estrategia:empty { display: none; }
+  #estrategia::before { content: "Estratégia"; display: block; color: var(--roxo); font-size: 11px; font-weight: 600;
+                        text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px; }
+  .plano { list-style: none; margin: 0 0 14px; padding: 0; counter-reset: p; }
+  .plano li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--linha); }
+  .plano li:last-child { border-bottom: 0; }
+  .plano li.vazio { display: block; }
+  .plano .marca { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #3a4250; margin-top: 1px; }
+  .plano li.feito .marca { background: var(--ok); border-color: var(--ok); }
+  .plano li.feito .txt { color: var(--sub); text-decoration: line-through; }
+  .plano li.atual .marca { border-color: var(--alerta); box-shadow: 0 0 0 3px rgba(242, 169, 59, .2); }
+  .plano li.atual .txt { font-weight: 600; }
+  .plano .res { display: block; color: var(--ok); font-size: 12px; text-decoration: none; }
+  #pensamento { color: #c9d0dc; white-space: pre-wrap; max-height: 8.5em; overflow: auto; font-size: 13px;
+                background: var(--card2); border-radius: 8px; padding: 10px 12px; }
+  .equipe { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .pkm { background: var(--card2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px; text-align: center; min-width: 0; }
+  .pkm img { width: 96px; height: 96px; margin: -4px auto 0; display: block; }
+  .pkm .nome { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pkm .nv { color: var(--sub); font-size: 12px; }
+  .barra { height: 6px; border-radius: 3px; background: #2a2f3a; margin: 8px 0 3px; overflow: hidden; }
+  .barra i { display: block; height: 100%; border-radius: 3px; transition: width .4s; }
+  .pkm .hp { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .golpes { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; }
+  .golpes span { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #252b36; color: #cfd5df; }
+  .golpes span.baixo { color: var(--alerta); }
+  .vazio { color: var(--sub); font-style: italic; }
+  .insignias { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .insignia { width: 48px; height: 48px; background-size: 384px 48px; opacity: .18; filter: grayscale(1); position: relative; }
+  .insignia.tem { opacity: 1; filter: none; }
+  .numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .numero { background: var(--card2); border-radius: 10px; padding: 10px 12px; }
+  .numero b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .numero span { color: var(--sub); font-size: 12px; }
+  .lider { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
+  .lider img.retrato { width: 96px; height: 96px; }
+  .lider .nome { font-size: 16px; font-weight: 650; }
+  .lider .sub { color: var(--sub); font-size: 12px; margin-bottom: 6px; }
+  .mini { display: flex; flex-wrap: wrap; gap: 6px; }
+  .mini div { text-align: center; font-size: 11px; color: var(--sub); }
+  .mini img { width: 56px; height: 56px; display: block; }
+  .comparar { margin-top: 8px; font-size: 13px; }
+  .itens { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .item { display: flex; align-items: center; gap: 8px; background: var(--card2); border-radius: 8px; padding: 6px 10px; min-width: 0; }
+  .item img { width: 32px; height: 32px; flex: none; }
+  .item span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .item b { font-variant-numeric: tabular-nums; }
+  .capturados { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; max-height: 330px; overflow: auto; }
+  .cap { background: var(--card2); border-radius: 8px; padding: 6px; text-align: center; font-size: 11px; color: var(--sub); }
+  .cap img { width: 64px; height: 64px; display: block; margin: 0 auto; }
+  .cap b { display: block; color: var(--texto); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
+  .dex div { position: relative; background: var(--card2); border-radius: 6px; aspect-ratio: 1; display: grid; place-items: center; }
+  .dex img { width: 44px; height: 44px; }
+  .dex .visto img { filter: grayscale(1); opacity: .45; }
+  .dex .nunca img { filter: brightness(0); opacity: .18; }
+  .dex span { position: absolute; left: 3px; top: 1px; font-size: 9px; color: var(--sub); font-variant-numeric: tabular-nums; }
+  .dex .tem { box-shadow: inset 0 0 0 1px rgba(47, 182, 124, .55); }
+  .filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .filtros button { padding: 3px 10px; font-size: 12px; font-weight: 500; border-radius: 999px; }
+  .filtros button.on { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .eventos { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow: auto; font-size: 13px; }
+  .eventos li { display: grid; grid-template-columns: 112px 86px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--linha); }
+  .eventos time { color: var(--sub); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 6px; height: fit-content; text-align: center; background: #2a2f3a; }
+  .t-decisao { color: var(--azul); background: rgba(79, 140, 255, .12); } .t-plano, .t-passo { color: var(--roxo); background: rgba(163, 116, 255, .12); }
+  .t-captura, .t-presente { color: var(--ouro); background: rgba(233, 196, 106, .14); } .t-item, .t-mochila, .t-compra { color: var(--alerta); background: rgba(242, 169, 59, .12); }
+  .t-batalha, .t-derrota { color: var(--perigo); background: rgba(229, 72, 77, .12); } .t-cura, .t-save { color: var(--ok); background: rgba(47, 182, 124, .12); }
+  .t-insignia { color: #1b1300; background: var(--ouro); }
+  .ev-texto { white-space: pre-wrap; word-break: break-word; }
+  .diario { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow: auto; font-size: 13px; }
+  .diario li { padding: 8px 0; border-bottom: 1px solid var(--linha); }
+  .diario time { display: block; color: var(--sub); font-size: 12px; }
+  @media (max-width: 1100px) { .c5, .c7, .c6, .c4, .c8 { grid-column: span 12; } .equipe { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { main { padding: 12px; } .equipe { grid-template-columns: repeat(2, 1fr); } .eventos li { grid-template-columns: 1fr; gap: 2px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>FireRed · <span>IA jogando</span></h1>
+  <span id="status" class="pilula">parado</span>
+  <div class="meta">
+    <span id="papel"></span>
+    <span>sessão <b id="sessao">0:00:00</b></span>
+    <span>episódio <b id="episodio">0</b></span>
+    <span>ações <b id="acoesTotal">0</b></span>
+  </div>
+  <div class="botoes">
+    <button class="jogar" id="btnJogar">▶ Jogar</button>
+    <button class="parar" id="btnParar">■ Parar</button>
+  </div>
+</header>
+<main>
+  <section class="card c5">
+    <h2>Tela ao vivo</h2>
+    <img id="tela" class="px" alt="tela do jogo">
+    <div class="local" id="local">—</div>
+  </section>
+  <section class="card c7">
+    <h2>Objetivo e plano <small id="papelPlano"></small></h2>
+    <div id="objetivo">—</div>
+    <div id="motivo"></div>
+    <div id="estrategia"></div>
+    <ol class="plano" id="plano"></ol>
+    <h2>Pensando agora</h2>
+    <div id="pensamento">—</div>
+  </section>
+  <section class="card c12">
+    <h2>Time <small id="timeInfo"></small></h2>
+    <div class="equipe" id="equipe"></div>
+  </section>
+  <section class="card c7">
+    <h2>Progresso</h2>
+    <div class="insignias" id="insignias"></div>
+    <div class="numeros">
+      <div class="numero"><b id="dinheiro">—</b><span>dinheiro</span></div>
+      <div class="numero"><b id="tempoJogo">—</b><span>tempo de jogo</span></div>
+      <div class="numero"><b id="pokedex">—</b><span>Pokédex</span></div>
+      <div class="numero"><b id="nCapturas">0</b><span>capturados pela IA</span></div>
+      <div class="numero"><b id="nBatalhas">0</b><span>batalhas</span></div>
+      <div class="numero"><b id="nBolas">0</b><span>bolas usadas</span></div>
+      <div class="numero"><b id="nMarcos">—</b><span>história (marcos)</span></div>
+      <div class="numero"><b id="nItens">—</b><span>itens do mapa pegos</span></div>
+    </div>
+  </section>
+  <section class="card c5">
+    <h2>Próximo líder</h2>
+    <div id="lider" class="vazio">—</div>
+  </section>
+  <section class="card c12">
+    <h2>História e treino <small id="treinoInfo"></small></h2>
+    <div class="barra"><i id="barraHistoria" style="background: var(--roxo)"></i></div>
+    <ol class="plano" id="roteiro"></ol>
+  </section>
+  <section class="card c4">
+    <h2>Mochila <small id="mochilaLida"></small></h2>
+    <div class="itens" id="mochila"></div>
+  </section>
+  <section class="card c4">
+    <h2>PC <small id="pcLido"></small></h2>
+    <div class="capturados" id="pc"></div>
+  </section>
+  <section class="card c4">
+    <h2>Capturados <small id="capInfo"></small></h2>
+    <div class="capturados" id="capturados"></div>
+  </section>
+  <section class="card c12">
+    <h2>Pokédex <small id="dexInfo"></small></h2>
+    <div class="dex" id="dex"></div>
+  </section>
+  <section class="card c8">
+    <h2>Linha do tempo <small>tudo que a IA decidiu e fez</small></h2>
+    <div class="filtros" id="filtros"></div>
+    <ul class="eventos" id="eventos"></ul>
+  </section>
+  <section class="card c4">
+    <h2>Diário</h2>
+    <ul class="diario" id="diario"></ul>
+  </section>
+</main>
+<script>
+  const INSIGNIAS = ["Boulder", "Cascade", "Thunder", "Rainbow", "Soul", "Marsh", "Volcano", "Earth"];
+  const FILTROS = {
+    "Importantes": (e) => !["acao", "mapa", "decisao"].includes(e.tipo),
+    "Decisões": (e) => ["decisao", "plano", "passo", "objetivo", "replanejar"].includes(e.tipo),
+    "Capturas": (e) => ["captura", "presente"].includes(e.tipo),
+    "Itens": (e) => ["item", "mochila", "compra"].includes(e.tipo),
+    "Batalhas": (e) => ["batalha", "derrota", "insignia"].includes(e.tipo),
+    "Mapas": (e) => e.tipo === "mapa",
+    "Tudo": () => true,
+  };
+  const ROTULOS = { decisao: "decisão", plano: "plano", passo: "passo", captura: "captura", presente: "presente", item: "item",
+    mochila: "mochila", compra: "compra", batalha: "batalha", derrota: "derrota", cura: "cura", save: "save", insignia: "insígnia",
+    mapa: "mapa", nota: "nota", objetivo: "objetivo", episodio: "episódio", acao: "ação", leitura: "leitura", replanejar: "replanejar",
+    evolucao: "evolução", treino: "treino", troca_pc: "PC", historia: "história", dialogo: "diálogo", outro: "outro" };
+  let filtro = "Importantes";
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, texto) => { const e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; };
+  const sprite = (tipo, nome) => `/sprite/${tipo}/${encodeURIComponent(nome)}.png`;
+  function img(tipo, nome, cls) { const i = el("img", "px " + (cls || "")); i.src = sprite(tipo, nome); i.alt = nome; i.onerror = () => { i.style.visibility = "hidden"; }; return i; }
+
+  function nomeMapa(id) {
+    if (!id) return "—";
+    return id.replace(/^MAP_/, "").replace(/([A-Z]+)(\d+)/g, "$1 $2").split("_")
+      .map((p) => (/^\d+F$|^B\d+F$/.test(p) ? p : p.charAt(0) + p.slice(1).toLowerCase())).join(" ");
+  }
+  const relogio = (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  const titulo = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+
+  function corHP(r) { return r > .5 ? "var(--ok)" : r > .2 ? "var(--alerta)" : "var(--perigo)"; }
+
+  function desenharTime(time) {
+    const box = $("equipe");
+    if (!time.length) { box.replaceChildren(el("div", "vazio", "a IA ainda não leu o time")); return; }
+    box.replaceChildren(...time.map((p) => {
+      const c = el("div", "pkm");
+      c.append(img("pokemon", p.especie));
+      c.append(el("div", "nome", p.apelido || titulo(p.especie)));
+      c.append(el("div", "nv", `Nv ${p.nivel}${p.status ? " · " + p.status : ""}`));
+      // leitura da tela grava a fração da barra; a memória antiga guardava atual/máximo
+      const r = p.hp_max ? p.hp / p.hp_max : (typeof p.hp === "number" && p.hp <= 1 ? p.hp : null);
+      const barra = el("div", "barra"); const i = el("i");
+      i.style.width = r == null ? "0" : Math.max(0, Math.min(1, r)) * 100 + "%"; i.style.background = r == null ? "transparent" : corHP(r);
+      barra.append(i); c.append(barra);
+      c.append(el("div", "hp", p.hp_max ? `HP ${p.hp}/${p.hp_max}` : r == null ? "HP ?" : `HP ${Math.round(r * 100)}%`));
+      const g = el("div", "golpes");
+      for (const golpe of p.golpes || []) {
+        const m = /(\d+)\s*\/\s*(\d+)/.exec(golpe);
+        g.append(el("span", m && +m[1] / +m[2] <= .25 ? "baixo" : "", golpe));
+      }
+      c.append(g); return c;
+    }));
+  }
+
+  function desenharLider(lider, time) {
+    const box = $("lider");
+    if (!lider) { box.className = ""; box.replaceChildren(el("div", "", "Todas as insígnias! Próximo: Elite dos 4.")); return; }
+    box.className = "lider";
+    const info = el("div");
+    info.append(el("div", "nome", lider.nome), el("div", "sub", `${lider.insignia} Badge`));
+    const mini = el("div", "mini");
+    for (const [esp, nv] of lider.time) { const d = el("div"); d.append(img("pokemon", esp), document.createTextNode(`${titulo(esp)} ${nv}`)); mini.append(d); }
+    info.append(mini);
+    const as = Math.max(...lider.time.map((t) => t[1]));
+    const nossos = (time || []).map((p) => p.nivel);
+    if (nossos.length) {
+      const melhor = Math.max(...nossos), media = Math.round(nossos.reduce((a, b) => a + b, 0) / nossos.length);
+      const c = el("div", "comparar", `Ás dele: nv ${as} · nosso melhor: nv ${melhor} · média do time: nv ${media}`);
+      c.style.color = melhor >= as ? "var(--ok)" : "var(--alerta)"; info.append(c);
+    }
+    box.replaceChildren(img("treinador", lider.pic, "retrato"), info);
+  }
+
+  function desenharMochila(mochila, lida) {
+    const itens = Object.entries(mochila || {});
+    $("mochilaLida").textContent = lida ? `lida em ${lida}, ajustada a cada uso` : "ainda não lida";
+    $("mochila").replaceChildren(...(itens.length ? itens.map(([nome, qtd]) => {
+      const d = el("div", "item"); d.append(img("item", nome), el("span", "", titulo(nome)), el("b", "", "×" + qtd)); return d;
+    }) : [el("div", "vazio", "vazia ou desconhecida")]));
+  }
+
+  function desenharCapturados(lista) {
+    $("capInfo").textContent = `${lista.length} nesta partida`;
+    $("capturados").replaceChildren(...(lista.length ? [...lista].reverse().map((c) => {
+      const d = el("div", "cap"); d.title = `${c.como || ""} · ${c.quando || ""}`;
+      d.append(img("pokemon", c.especie), el("b", "", titulo(c.especie)), document.createTextNode(`nv ${c.nivel} · ${nomeMapa(c.local)}`));
+      return d;
+    }) : [el("div", "vazio", "nenhuma captura ainda")]));
+  }
+
+  let dexAssinatura = "";
+  function desenharDex(e) {
+    const cap = new Set(e.pokedex_capturados || []), vis = new Set(e.pokedex_vistos || []);
+    $("dexInfo").textContent = `${cap.size} capturados · ${vis.size} vistos de 151` + (e.pokedex_lida_em ? ` · lida em ${e.pokedex_lida_em}` : " · ainda não lida");
+    const assinatura = [...cap].join() + "|" + [...vis].join();
+    if (assinatura === dexAssinatura || !(e.kanto || []).length) return;  // 151 sprites: só redesenha quando muda
+    dexAssinatura = assinatura;
+    $("dex").replaceChildren(...e.kanto.map((esp, i) => {
+      const d = el("div", cap.has(esp) ? "tem" : vis.has(esp) ? "visto" : "nunca");
+      d.title = `#${String(i + 1).padStart(3, "0")} ${titulo(esp)}` + (cap.has(esp) ? " (capturado)" : vis.has(esp) ? " (visto)" : "");
+      d.append(el("span", "", String(i + 1)), img("pokemon", esp)); return d;
+    }));
+  }
+
+  async function atualizar() {
+    let e;
+    try { e = await (await fetch("/estado")).json(); } catch { return; }
+    const st = $("status");
+    st.textContent = e.jogador_rodando ? e.status : "parado";
+    st.className = "pilula " + (e.jogador_rodando && e.status === "jogando" ? "jogando" : (e.status || "").startsWith("erro") ? "erro" : "");
+    $("btnJogar").disabled = e.jogador_rodando; $("btnParar").disabled = !e.jogador_rodando;
+    $("papel").textContent = e.modelo || ""; $("papelPlano").textContent = e.plano_motivo ? "" : "";
+    $("sessao").textContent = relogio(e.sessao_s || 0);
+    $("episodio").textContent = e.episodios; $("acoesTotal").textContent = e.acoes_total;
+    $("objetivo").textContent = e.objetivo || "—";
+    $("motivo").textContent = e.plano_motivo || "";
+    $("estrategia").textContent = e.estrategia || "";
+    const atual = (e.plano || []).findIndex((p) => !p.feito);
+    $("plano").replaceChildren(...(e.plano || []).map((p, i) => {
+      const li = el("li", p.feito ? "feito" : i === atual ? "atual" : "");
+      const t = el("div", "txt", p.passo); if (p.resultado) t.append(el("span", "res", "✓ " + p.resultado));
+      li.append(el("div", "marca"), t); return li;
+    }));
+    if (!(e.plano || []).length) $("plano").replaceChildren(el("li", "vazio", "sem plano: o estrategista monta no próximo episódio"));
+    $("pensamento").textContent = e.pensamento || "—";
+    $("local").replaceChildren(nomeMapa(e.local && e.local.mapa));
+    if (e.local) $("local").append(el("small", "", `(${e.local.x}, ${e.local.y})`));
+    desenharTime(e.time || []);
+    $("timeInfo").textContent = (e.time || []).length ? `${e.time.length} Pokémon · PC: ${(e.pc || []).length}` : "";
+    const tem = (e.insignias || []).join(" ").toLowerCase();
+    $("insignias").replaceChildren(...INSIGNIAS.map((n, i) => {
+      const d = el("div", "insignia px" + (tem.includes(n.toLowerCase()) ? " tem" : ""));
+      d.style.backgroundImage = `url(${sprite("insignias", "todas")})`; d.style.backgroundPosition = `${-48 * i}px 0`; d.title = n + " Badge";
+      return d;
+    }));
+    $("dinheiro").textContent = e.dinheiro == null ? "—" : "₽" + e.dinheiro.toLocaleString("pt-BR");
+    $("tempoJogo").textContent = e.tempo_jogo || "—";
+    $("pokedex").textContent = e.pokedex == null ? "—" : e.pokedex;
+    const c = e.contadores || {};
+    $("nCapturas").textContent = (e.capturados || []).length;
+    $("nBatalhas").textContent = c.batalhas_terminadas || 0;
+    $("nBolas").textContent = c.bolas_usadas || 0;
+    const rot = e.roteiro || [], feitos = rot.filter((m) => m.feito);
+    $("nMarcos").textContent = rot.length ? `${feitos.length}/${rot.length}` : "—";
+    $("nItens").textContent = e.itens_total ? `${(e.itens_coletados || []).length}/${e.itens_total}` : "—";
+    $("barraHistoria").style.width = rot.length ? (100 * feitos.length / rot.length) + "%" : "0";
+    // o último feito e os que estão liberados para fazer agora
+    const mostrar = [...feitos.slice(-1), ...rot.filter((m) => !m.feito && m.pronto)];
+    $("roteiro").replaceChildren(...mostrar.map((m) => {
+      const li = el("li", m.feito ? "feito" : "atual"); li.append(el("div", "marca"), el("div", "txt", m.desc)); return li;
+    }));
+    const t = e.treino || {}, alvos = Object.entries(t.alvos || {});
+    $("treinoInfo").textContent = (alvos.length ? `treino: ${alvos.map(([k, v]) => `${titulo(k)} até nv ${v}`).join(", ")}` +
+      (t.escolta ? ` · escolta ${titulo(t.escolta)}` : "") + " · " : "") + `selvagens: ${e.modo_selvagens || "fugir"}`;
+    desenharLider(e.proximo_lider, e.time);
+    desenharMochila(e.mochila, e.mochila_lida_em);
+    desenharCapturados(e.capturados || []);
+    desenharDex(e);
+    $("pcLido").textContent = e.pc_lido_em ? `lido em ${e.pc_lido_em}` : "ainda não lido";
+    $("pc").replaceChildren(...((e.pc || []).length ? e.pc.map((p) => {
+      const d = el("div", "cap"); d.append(img("pokemon", p.especie), el("b", "", titulo(p.especie)), document.createTextNode(`nv ${p.nivel}`));
+      return d;
+    }) : [el("div", "vazio", e.pc_lido_em ? "nenhum Pokémon guardado" : "a IA ainda não abriu o PC")]));
+    $("diario").replaceChildren(...[...(e.diario || [])].reverse().slice(0, 60).map((d) => {
+      const li = el("li"); li.append(el("time", "", d.t), document.createTextNode(d.texto)); return li;
+    }));
+  }
+
+  async function atualizarEventos() {
+    let lista;
+    try { lista = await (await fetch("/eventos?n=600")).json(); } catch { return; }
+    const f = FILTROS[filtro];
+    $("eventos").replaceChildren(...lista.filter(f).reverse().slice(0, 250).map((e) => {
+      const li = el("li");
+      li.append(el("time", "", e.t), el("span", "tag t-" + e.tipo, ROTULOS[e.tipo] || e.tipo), el("div", "ev-texto", e.texto));
+      return li;
+    }));
+  }
+
+  $("filtros").replaceChildren(...Object.keys(FILTROS).map((nome) => {
+    const b = el("button", nome === filtro ? "on" : "", nome);
+    b.onclick = () => { filtro = nome; document.querySelectorAll("#filtros button").forEach((x) => x.classList.toggle("on", x === b)); atualizarEventos(); };
+    return b;
+  }));
+  async function comando(c) { await fetch("/jogador/" + c, { method: "POST" }); setTimeout(atualizar, 800); }
+  $("btnJogar").onclick = () => comando("iniciar");
+  $("btnParar").onclick = () => comando("parar");
+  function atualizarTela() { $("tela").src = "/tela.png?" + Date.now(); }
+  atualizar(); atualizarEventos(); atualizarTela();
+  setInterval(atualizar, 1500); setInterval(atualizarEventos, 3000); setInterval(atualizarTela, 800);
+</script>
+</body>
+</html>

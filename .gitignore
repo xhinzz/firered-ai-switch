@@ -1,0 +1,19 @@
+# ambiente
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+build/
+dist/
+
+# segredos e máquina
+.env
+
+# dados baixados (scripts/baixar_decomp.py e o gerador do ACE)
+dados/pokefirered/
+dados/gerador/
+
+# campanha: memória, logs e fotos de sessão
+memoria/
+logs/
