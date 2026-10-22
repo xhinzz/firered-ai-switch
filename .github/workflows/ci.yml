@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  testes:
+    # a captura de tela usa a API Win32 (PrintWindow); o resto roda em qualquer lugar, mas o alvo é Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Dependências
+        run: python -m pip install -e ".[dev]"
+      - name: Decomp pret/pokefirered (mapas, fonte e dados do jogo)
+        uses: actions/cache@v4
+        with:
+          path: dados/pokefirered
+          key: decomp-${{ hashFiles('scripts/baixar_decomp.py') }}
+      - run: python scripts/baixar_decomp.py
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Testes
+        run: pytest
