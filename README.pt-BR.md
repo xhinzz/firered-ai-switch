@@ -11,6 +11,8 @@ sem emulador, sem ROM e sem ler a memória do jogo.
 ![Plataforma](https://img.shields.io/badge/plataforma-Windows%20%2B%20WSL-0078d4)
 [![Licença: MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-green)](LICENSE)
 
+**[▶ Veja a campanha inteira reproduzida evento por evento](https://xhinzz.github.io/firered-ai-switch/)**
+
 [English](README.md) · [Arquitetura](docs/pt-BR/arquitetura.md) · [Instalação](docs/pt-BR/instalacao.md) · [ACE e pós-jogo](docs/pt-BR/ace.md) · [Diário da campanha](docs/campanha.md)
 
 <img src="docs/img/campanha.gif" width="480" alt="Quadros capturados do Switch durante a campanha">
@@ -142,7 +144,7 @@ fireredia/
 ├── estado.py      memória
 └── jogar.py       `python -m fireredia`
 dados/             detonado escrito para o agente, modelos de tela (o decomp é baixado aqui, fora do git)
-scripts/           baixar_decomp.py · figuras.py · relatorio_campanha.py
+scripts/           baixar_decomp.py · figuras.py · relatorio_campanha.py · gerar_site.py
 tests/             testes offline, com telas reais do Switch como fixtures
 docs/              arquitetura, instalação, ACE, diário da campanha
 ```

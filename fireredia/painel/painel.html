@@ -3,380 +3,636 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FireRed IA</title>
+<title>FireRed AI · Painel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,600;0,700;1,800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #0d0f13; --card: #151920; --card2: #1b2029; --linha: #262c37; --texto: #eaedf3; --sub: #96a0b2;
-    --fogo: #ff6b3d; --ok: #2fb67c; --alerta: #f2a93b; --perigo: #e5484d; --azul: #4f8cff; --roxo: #a374ff; --ouro: #e9c46a;
+    --bg: #08090c; --bg2: #0d0f14; --card: #12151c; --card2: #171b24; --linha: #262b36;
+    --borda: rgba(229, 57, 53, .28); --borda-forte: rgba(229, 57, 53, .55);
+    --vermelho: #e53935; --vermelho2: #ff5a4f; --laranja: #ff8a3d; --dourado: #ffc400;
+    --texto: #ece9e4; --suave: #9aa1ad; --apagado: #5d6470;
+    --ok: #22c55e; --alerta: #f5b041; --perigo: #ff5252; --azul: #4aa3ff; --roxo: #a78bfa;
+    --raio: 14px; --sidebar: 84px;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; background: var(--bg); color: var(--texto); font: 14px/1.45 "Segoe UI", system-ui, sans-serif; }
-  img.px, .px { image-rendering: pixelated; }
-  header { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
-           padding: 12px 20px; background: rgba(13, 15, 19, .92); backdrop-filter: blur(6px); border-bottom: 1px solid var(--linha); }
-  h1 { margin: 0; font-size: 18px; }
-  h1 span { color: var(--fogo); }
-  .pilula { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: #2a2f3a; color: var(--sub); }
-  .pilula.jogando { background: rgba(47, 182, 124, .15); color: var(--ok); }
-  .pilula.erro { background: rgba(229, 72, 77, .15); color: var(--perigo); }
-  .meta { color: var(--sub); font-size: 12px; display: flex; gap: 14px; flex-wrap: wrap; }
-  .meta b { color: var(--texto); font-variant-numeric: tabular-nums; }
-  .botoes { margin-left: auto; display: flex; gap: 8px; }
-  button { font: inherit; font-weight: 600; border: 1px solid var(--linha); border-radius: 8px; padding: 6px 14px; cursor: pointer;
-           background: var(--card2); color: var(--texto); }
-  button.jogar { background: var(--ok); border-color: var(--ok); color: #04150d; }
-  button.parar { background: transparent; color: var(--perigo); border-color: rgba(229, 72, 77, .5); }
-  button:disabled { opacity: .4; cursor: default; }
-  main { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; padding: 14px 20px 30px; }
-  .card { background: var(--card); border: 1px solid var(--linha); border-radius: 12px; padding: 14px 16px; min-width: 0; }
-  .card h2 { margin: 0 0 10px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .9px; color: var(--sub); font-weight: 600;
-             display: flex; justify-content: space-between; gap: 8px; }
-  .card h2 small { text-transform: none; letter-spacing: 0; font-weight: 400; }
-  .c5 { grid-column: span 5; } .c7 { grid-column: span 7; } .c12 { grid-column: span 12; } .c6 { grid-column: span 6; }
-  .c4 { grid-column: span 4; } .c8 { grid-column: span 8; }
-  #tela { width: 100%; aspect-ratio: 3 / 2; border-radius: 8px; background: #000; display: block; }
-  .local { margin-top: 10px; font-size: 15px; font-weight: 600; }
-  .local small { color: var(--sub); font-weight: 400; margin-left: 6px; }
-  #objetivo { font-size: 17px; font-weight: 650; margin-bottom: 4px; }
-  #motivo { color: var(--sub); font-size: 13px; margin-bottom: 10px; }
-  #estrategia { font-size: 13px; white-space: pre-wrap; background: var(--card2); border-left: 3px solid var(--roxo);
-                border-radius: 6px; padding: 8px 12px; margin-bottom: 12px; }
-  #estrategia:empty { display: none; }
-  #estrategia::before { content: "Estratégia"; display: block; color: var(--roxo); font-size: 11px; font-weight: 600;
-                        text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px; }
-  .plano { list-style: none; margin: 0 0 14px; padding: 0; counter-reset: p; }
-  .plano li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; padding: 6px 0; border-bottom: 1px dashed var(--linha); }
-  .plano li:last-child { border-bottom: 0; }
-  .plano li.vazio { display: block; }
-  .plano .marca { width: 18px; height: 18px; border-radius: 5px; border: 2px solid #3a4250; margin-top: 1px; }
-  .plano li.feito .marca { background: var(--ok); border-color: var(--ok); }
-  .plano li.feito .txt { color: var(--sub); text-decoration: line-through; }
-  .plano li.atual .marca { border-color: var(--alerta); box-shadow: 0 0 0 3px rgba(242, 169, 59, .2); }
-  .plano li.atual .txt { font-weight: 600; }
-  .plano .res { display: block; color: var(--ok); font-size: 12px; text-decoration: none; }
-  #pensamento { color: #c9d0dc; white-space: pre-wrap; max-height: 8.5em; overflow: auto; font-size: 13px;
-                background: var(--card2); border-radius: 8px; padding: 10px 12px; }
-  .equipe { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
-  .pkm { background: var(--card2); border: 1px solid var(--linha); border-radius: 12px; padding: 10px; text-align: center; min-width: 0; }
-  .pkm img { width: 96px; height: 96px; margin: -4px auto 0; display: block; }
-  .pkm .nome { font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .pkm .nv { color: var(--sub); font-size: 12px; }
-  .barra { height: 6px; border-radius: 3px; background: #2a2f3a; margin: 8px 0 3px; overflow: hidden; }
-  .barra i { display: block; height: 100%; border-radius: 3px; transition: width .4s; }
-  .pkm .hp { font-size: 12px; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .golpes { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: 8px; }
-  .golpes span { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #252b36; color: #cfd5df; }
-  .golpes span.baixo { color: var(--alerta); }
-  .vazio { color: var(--sub); font-style: italic; }
-  .insignias { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-  .insignia { width: 48px; height: 48px; background-size: 384px 48px; opacity: .18; filter: grayscale(1); position: relative; }
-  .insignia.tem { opacity: 1; filter: none; }
-  .numeros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .numero { background: var(--card2); border-radius: 10px; padding: 10px 12px; }
-  .numero b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
-  .numero span { color: var(--sub); font-size: 12px; }
-  .lider { display: grid; grid-template-columns: 96px 1fr; gap: 14px; align-items: center; }
-  .lider img.retrato { width: 96px; height: 96px; }
-  .lider .nome { font-size: 16px; font-weight: 650; }
-  .lider .sub { color: var(--sub); font-size: 12px; margin-bottom: 6px; }
-  .mini { display: flex; flex-wrap: wrap; gap: 6px; }
-  .mini div { text-align: center; font-size: 11px; color: var(--sub); }
-  .mini img { width: 56px; height: 56px; display: block; }
-  .comparar { margin-top: 8px; font-size: 13px; }
-  .itens { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-  .item { display: flex; align-items: center; gap: 8px; background: var(--card2); border-radius: 8px; padding: 6px 10px; min-width: 0; }
-  .item img { width: 32px; height: 32px; flex: none; }
-  .item span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
-  .item b { font-variant-numeric: tabular-nums; }
-  .capturados { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; max-height: 330px; overflow: auto; }
-  .cap { background: var(--card2); border-radius: 8px; padding: 6px; text-align: center; font-size: 11px; color: var(--sub); }
-  .cap img { width: 64px; height: 64px; display: block; margin: 0 auto; }
-  .cap b { display: block; color: var(--texto); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 4px; }
-  .dex div { position: relative; background: var(--card2); border-radius: 6px; aspect-ratio: 1; display: grid; place-items: center; }
-  .dex img { width: 44px; height: 44px; }
-  .dex .visto img { filter: grayscale(1); opacity: .45; }
-  .dex .nunca img { filter: brightness(0); opacity: .18; }
-  .dex span { position: absolute; left: 3px; top: 1px; font-size: 9px; color: var(--sub); font-variant-numeric: tabular-nums; }
-  .dex .tem { box-shadow: inset 0 0 0 1px rgba(47, 182, 124, .55); }
-  .filtros { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .filtros button { padding: 3px 10px; font-size: 12px; font-weight: 500; border-radius: 999px; }
-  .filtros button.on { background: var(--azul); border-color: var(--azul); color: #fff; }
-  .eventos { list-style: none; margin: 0; padding: 0; max-height: 520px; overflow: auto; font-size: 13px; }
-  .eventos li { display: grid; grid-template-columns: 112px 86px 1fr; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--linha); }
-  .eventos time { color: var(--sub); font-variant-numeric: tabular-nums; font-size: 12px; }
-  .tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 6px; height: fit-content; text-align: center; background: #2a2f3a; }
-  .t-decisao { color: var(--azul); background: rgba(79, 140, 255, .12); } .t-plano, .t-passo { color: var(--roxo); background: rgba(163, 116, 255, .12); }
-  .t-captura, .t-presente { color: var(--ouro); background: rgba(233, 196, 106, .14); } .t-item, .t-mochila, .t-compra { color: var(--alerta); background: rgba(242, 169, 59, .12); }
-  .t-batalha, .t-derrota { color: var(--perigo); background: rgba(229, 72, 77, .12); } .t-cura, .t-save { color: var(--ok); background: rgba(47, 182, 124, .12); }
-  .t-insignia { color: #1b1300; background: var(--ouro); }
-  .ev-texto { white-space: pre-wrap; word-break: break-word; }
-  .diario { list-style: none; margin: 0; padding: 0; max-height: 560px; overflow: auto; font-size: 13px; }
-  .diario li { padding: 8px 0; border-bottom: 1px solid var(--linha); }
-  .diario time { display: block; color: var(--sub); font-size: 12px; }
-  @media (max-width: 1100px) { .c5, .c7, .c6, .c4, .c8 { grid-column: span 12; } .equipe { grid-template-columns: repeat(3, 1fr); } }
-  @media (max-width: 560px) { main { padding: 12px; } .equipe { grid-template-columns: repeat(2, 1fr); } .eventos li { grid-template-columns: 1fr; gap: 2px; } }
+  html { scroll-behavior: smooth; scroll-padding-top: 96px; }
+  body {
+    margin: 0; color: var(--texto); font: 14px/1.45 "Rubik", system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 500px at 85% -10%, rgba(229, 57, 53, .18), transparent 60%),
+      radial-gradient(900px 600px at -10% 110%, rgba(229, 57, 53, .10), transparent 60%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  img.px { image-rendering: pixelated; }
+  button { font: inherit; cursor: pointer; }
+  svg.ic { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  /* ---------- topo ---------- */
+  header {
+    position: sticky; top: 0; z-index: 10; height: 76px; display: flex; align-items: center; gap: 16px;
+    padding: 0 20px 0 0; background: linear-gradient(180deg, #0b0c10 0%, rgba(11, 12, 16, .92) 100%);
+    border-bottom: 1px solid var(--borda); overflow: hidden;
+  }
+  header .paisagem { position: absolute; inset: 0 0 0 auto; width: 46%; pointer-events: none; opacity: .9; }
+  .marca { width: var(--sidebar); flex: none; display: grid; place-items: center; height: 100%; }
+  .logo { display: flex; flex-direction: column; justify-content: center; margin-right: 8px; position: relative; }
+  .logo b { font: italic 800 30px/1 "Rubik", sans-serif; letter-spacing: -.5px; }
+  .logo b span { color: var(--vermelho2); }
+  .logo small { color: var(--suave); font-size: 10.5px; letter-spacing: 1.6px; text-transform: uppercase; margin-top: 3px; }
+  .chips { display: flex; gap: 10px; position: relative; }
+  .chip {
+    display: flex; align-items: center; gap: 10px; min-width: 128px; padding: 8px 14px; border-radius: 10px;
+    background: rgba(18, 21, 28, .85); border: 1px solid var(--linha);
+  }
+  .chip svg { color: var(--dourado); width: 20px; height: 20px; }
+  .chip div { display: flex; flex-direction: column; line-height: 1.15; }
+  .chip small { font-size: 9.5px; letter-spacing: 1.2px; color: var(--suave); text-transform: uppercase; }
+  .chip b { font-size: 15px; font-variant-numeric: tabular-nums; }
+  .chip.estado b { font-size: 13px; text-transform: uppercase; letter-spacing: .5px; }
+  .ponto { width: 10px; height: 10px; border-radius: 50%; background: var(--apagado); box-shadow: 0 0 0 3px rgba(255, 255, 255, .05); flex: none; }
+  .ponto.jogando { background: var(--ok); box-shadow: 0 0 12px var(--ok); }
+  .ponto.erro { background: var(--perigo); box-shadow: 0 0 12px var(--perigo); }
+  .acoes-topo { margin-left: auto; display: flex; gap: 10px; position: relative; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 18px; border-radius: 10px;
+    border: 1px solid transparent; font-weight: 600; color: #fff; transition: filter .15s, transform .15s;
+  }
+  .btn:hover:not(:disabled) { filter: brightness(1.12); transform: translateY(-1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .btn.jogar { background: linear-gradient(180deg, #24c26a, #179a52); }
+  .btn.parar { background: rgba(229, 57, 53, .12); border-color: var(--borda-forte); color: #ff8a84; }
+  .btn.icone { width: 42px; padding: 0; justify-content: center; background: rgba(18, 21, 28, .85); border-color: var(--linha); color: var(--suave); }
+
+  /* ---------- lateral ---------- */
+  nav.lateral {
+    position: fixed; top: 76px; bottom: 0; left: 0; width: var(--sidebar); z-index: 9; padding: 14px 10px;
+    display: flex; flex-direction: column; gap: 6px; background: rgba(9, 10, 13, .92); border-right: 1px solid var(--borda);
+  }
+  nav.lateral a {
+    display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 10px 0; border-radius: 10px;
+    color: var(--suave); text-decoration: none; font-size: 11.5px; transition: background .15s, color .15s;
+  }
+  nav.lateral a svg { width: 22px; height: 22px; }
+  nav.lateral a:hover { color: var(--texto); background: rgba(255, 255, 255, .04); }
+  nav.lateral a.ativo { color: #fff; background: linear-gradient(180deg, var(--vermelho), #b3261f); box-shadow: 0 6px 18px rgba(229, 57, 53, .35); }
+  nav.lateral .lema { margin-top: auto; font-size: 10px; letter-spacing: 1.5px; color: var(--apagado); text-transform: uppercase; text-align: center; line-height: 1.6; }
+
+  /* ---------- grade ---------- */
+  main { margin-left: var(--sidebar); padding: 18px 20px 40px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
+  .card {
+    position: relative; background: linear-gradient(180deg, var(--card2), var(--card)); border: 1px solid var(--borda);
+    border-radius: var(--raio); padding: 16px 18px; min-width: 0;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03), 0 10px 30px rgba(0, 0, 0, .25);
+  }
+  .c3 { grid-column: span 3; } .c4 { grid-column: span 4; } .c5 { grid-column: span 5; } .c6 { grid-column: span 6; }
+  .c7 { grid-column: span 7; } .c8 { grid-column: span 8; } .c12 { grid-column: span 12; }
+  @media (max-width: 1280px) { .c3, .c4, .c5, .c6, .c7, .c8 { grid-column: span 12; } }
+  .card h2 {
+    display: flex; align-items: center; gap: 10px; margin: 0 0 14px; font-size: 14px; font-weight: 700;
+    letter-spacing: 1.3px; text-transform: uppercase;
+  }
+  .card h2 .bola { width: 20px; height: 20px; }
+  .card h2 small { margin-left: auto; font-weight: 400; letter-spacing: .3px; text-transform: none; color: var(--suave); font-size: 12px; }
+  .card h2 a { margin-left: auto; color: var(--azul); font-size: 12px; text-transform: none; letter-spacing: 0; text-decoration: none; font-weight: 500; }
+  .vazio { color: var(--suave); font-size: 13px; padding: 18px; text-align: center; }
+
+  /* tela ao vivo */
+  .tela { position: relative; border-radius: 10px; overflow: hidden; background: #000; border: 1px solid var(--linha); aspect-ratio: 3 / 2; }
+  .tela img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .tela .selo { position: absolute; top: 10px; left: 10px; padding: 4px 10px; border-radius: 6px; background: rgba(0, 0, 0, .65); font-size: 12px; font-weight: 600; letter-spacing: .4px; }
+  .rodape-tela { display: flex; align-items: center; gap: 12px; margin-top: 10px; font-size: 12.5px; color: var(--suave); }
+  .rodape-tela .vivo { display: flex; align-items: center; gap: 6px; color: var(--perigo); font-weight: 600; }
+  .rodape-tela .vivo i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .rodape-tela .vivo.parado { color: var(--apagado); }
+  .rodape-tela b { color: var(--texto); font-weight: 500; }
+  .rodape-tela .dir { margin-left: auto; display: flex; gap: 6px; }
+  .rodape-tela .dir button { background: none; border: 1px solid var(--linha); border-radius: 8px; color: var(--suave); width: 32px; height: 30px; display: grid; place-items: center; }
+  .rodape-tela .dir button:hover { color: var(--texto); border-color: var(--suave); }
+
+  /* objetivo e plano */
+  .objetivo { display: flex; gap: 14px; padding: 14px; border-radius: 12px; border: 1px solid var(--borda); background: linear-gradient(120deg, rgba(229, 57, 53, .14), rgba(229, 57, 53, .02) 60%); }
+  .objetivo .alvo { width: 46px; height: 46px; border-radius: 12px; display: grid; place-items: center; background: rgba(0, 0, 0, .35); color: var(--vermelho2); flex: none; }
+  .objetivo .alvo svg { width: 24px; height: 24px; }
+  .rotulo { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; margin: 16px 0 8px; }
+  .rotulo.r { color: var(--vermelho2); } .rotulo.a { color: var(--azul); } .rotulo.l { color: var(--laranja); } .rotulo.d { color: var(--dourado); }
+  .objetivo h3 { margin: 0 0 4px; font-size: 17px; line-height: 1.3; }
+  .objetivo p { margin: 0; color: var(--suave); font-size: 13px; }
+  .pensando { padding: 12px 14px; border-radius: 10px; background: rgba(0, 0, 0, .28); border: 1px solid var(--linha); color: #d7d3cd; font-size: 13.5px; display: flex; gap: 10px; }
+  .pensando .reticencias { margin-left: auto; color: var(--azul); letter-spacing: 3px; font-weight: 700; animation: pisca 1.4s infinite; }
+  @keyframes pisca { 50% { opacity: .25; } }
+  .proxima { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; border: 1px solid rgba(74, 163, 255, .55); background: rgba(74, 163, 255, .08); color: #b9dcff; font-weight: 500; }
+  .proxima svg { color: var(--azul); }
+  .alertas { display: flex; flex-direction: column; gap: 6px; }
+  .alerta { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(245, 176, 65, .45); background: rgba(245, 176, 65, .07); color: #f7d79a; font-size: 13px; }
+  .alerta.grave { border-color: rgba(255, 82, 82, .5); background: rgba(255, 82, 82, .08); color: #ffb3ae; }
+  .alerta.ok { border-color: rgba(34, 197, 94, .35); background: rgba(34, 197, 94, .06); color: #a7e7bf; }
+  details.plano { margin-top: 14px; border-top: 1px solid var(--linha); padding-top: 10px; }
+  details.plano summary { cursor: pointer; color: var(--suave); font-size: 12.5px; list-style: none; display: flex; gap: 8px; align-items: center; }
+  details.plano summary::before { content: "▸"; transition: transform .15s; }
+  details.plano[open] summary::before { transform: rotate(90deg); }
+  ol.passos { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  ol.passos li { display: flex; gap: 10px; font-size: 13px; color: var(--suave); }
+  ol.passos li::before { content: ""; width: 14px; height: 14px; margin-top: 2px; border-radius: 4px; border: 2px solid var(--apagado); flex: none; }
+  ol.passos li.feito { color: var(--apagado); text-decoration: line-through; }
+  ol.passos li.feito::before { background: var(--ok); border-color: var(--ok); }
+  ol.passos li.atual { color: var(--texto); }
+  ol.passos li.atual::before { border-color: var(--dourado); box-shadow: 0 0 8px rgba(255, 196, 0, .5); }
+  .estrategia { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--roxo); background: rgba(167, 139, 250, .07); border-radius: 0 8px 8px 0; font-size: 12.5px; color: #cfc6f5; }
+
+  /* progresso */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  @media (max-width: 1500px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat { position: relative; display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 12px; background: rgba(0, 0, 0, .25); border: 1px solid var(--linha); overflow: hidden; }
+  .stat .ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: rgba(255, 255, 255, .04); flex: none; }
+  .stat .ico svg { width: 22px; height: 22px; }
+  .stat small { display: block; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--suave); }
+  .stat b { font-size: 19px; font-variant-numeric: tabular-nums; }
+  .stat .fundo { position: absolute; right: -6px; bottom: -10px; width: 58px; height: 58px; opacity: .07; }
+  .ico.ouro { color: var(--dourado); } .ico.azul { color: var(--azul); } .ico.verm { color: var(--vermelho2); } .ico.verde { color: var(--ok); } .ico.lar { color: var(--laranja); } .ico.roxo { color: var(--roxo); }
+
+  /* líder */
+  .lider { display: grid; grid-template-columns: 150px 1fr; gap: 16px; align-items: start; }
+  .retrato { border-radius: 12px; border: 1px solid var(--linha); background: radial-gradient(circle at 50% 40%, rgba(229, 57, 53, .22), rgba(0, 0, 0, .35) 70%); height: 150px; display: grid; place-items: center; }
+  .retrato img { width: 128px; height: 128px; }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; background: var(--laranja); color: #241005; }
+  .lider h3 { margin: 8px 0 4px; font-size: 20px; }
+  .tipo { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600; background: rgba(255, 255, 255, .08); }
+  .mini { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .mini div { display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border-radius: 8px; background: rgba(0, 0, 0, .3); font-size: 12px; }
+  .mini img { width: 36px; height: 36px; }
+  .comparar { margin-top: 10px; font-size: 12.5px; }
+  .insignias { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--linha); align-items: center; }
+  .insignia { width: 32px; height: 32px; background-size: 256px 32px; image-rendering: pixelated; filter: grayscale(1) brightness(.35); border-radius: 50%; }
+  .insignia.tem { filter: none; }
+  .insignias small { margin-left: auto; color: var(--suave); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .campeao { display: flex; gap: 16px; align-items: center; padding: 6px 0; }
+  .campeao .trofeu { width: 120px; height: 120px; border-radius: 16px; display: grid; place-items: center; background: radial-gradient(circle, rgba(255, 196, 0, .28), rgba(0, 0, 0, .3) 70%); color: var(--dourado); flex: none; }
+  .campeao .trofeu svg { width: 64px; height: 64px; }
+  .campeao h3 { margin: 6px 0; font-size: 21px; }
+
+  /* time */
+  .equipe { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  @media (max-width: 1500px) { .equipe { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .pkm { padding: 12px 10px; border-radius: 12px; border: 1px solid var(--linha); background: rgba(0, 0, 0, .25); text-align: center; min-height: 168px; }
+  .pkm.vazio { display: grid; place-items: center; color: var(--apagado); border-style: dashed; }
+  .pkm img { width: 72px; height: 72px; }
+  .pkm .nome { font-weight: 600; } .pkm .nv { color: var(--suave); font-size: 12px; }
+  .barra { height: 7px; border-radius: 4px; background: #262b36; overflow: hidden; margin: 8px 0 4px; }
+  .barra i { display: block; height: 100%; border-radius: 4px; }
+  .pkm .hp { font-size: 11.5px; color: var(--suave); }
+  .golpes { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; margin-top: 8px; }
+  .golpes span { font-size: 10.5px; padding: 2px 6px; border-radius: 5px; background: rgba(255, 255, 255, .05); color: #c9c5bf; }
+  .golpes span.baixo { color: var(--alerta); background: rgba(245, 176, 65, .1); }
+
+  /* mochila, capturados, pc */
+  .itens { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; max-height: 300px; overflow: auto; padding-right: 4px; }
+  .item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 10px; border: 1px solid var(--linha); background: rgba(0, 0, 0, .25); text-align: center; font-size: 11.5px; }
+  .item img { width: 32px; height: 32px; } .item b { color: var(--suave); font-weight: 500; }
+  .capturados { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; max-height: 300px; overflow: auto; padding-right: 4px; }
+  .cap { display: flex; flex-direction: column; align-items: center; padding: 8px; border-radius: 10px; border: 1px solid var(--linha); background: rgba(0, 0, 0, .25); font-size: 11.5px; color: var(--suave); text-align: center; }
+  .cap img { width: 56px; height: 56px; } .cap b { color: var(--texto); font-weight: 600; font-size: 12.5px; }
+
+  /* história (cidades) */
+  .cidades { position: relative; display: grid; grid-template-columns: repeat(11, 1fr); align-items: start; padding: 8px 4px 2px; }
+  .cidades::before { content: ""; position: absolute; left: 4.5%; right: 4.5%; top: 28px; height: 3px; background: var(--linha); border-radius: 2px; }
+  .cidades .trilha { position: absolute; left: 4.5%; top: 28px; height: 3px; background: linear-gradient(90deg, var(--vermelho), var(--laranja)); border-radius: 2px; transition: width .4s; }
+  .cidade { position: relative; display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12px; color: var(--apagado); text-align: center; }
+  .cidade .no { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: var(--card2); border: 2px solid var(--linha); }
+  .cidade .no svg { width: 20px; height: 20px; }
+  .cidade.visitada { color: var(--suave); } .cidade.visitada .no { border-color: rgba(229, 57, 53, .6); color: var(--vermelho2); }
+  .cidade.atual { color: #fff; font-weight: 600; } .cidade.atual .no { background: var(--vermelho); border-color: #fff; color: #fff; box-shadow: 0 0 16px rgba(229, 57, 53, .7); }
+  .treino { margin-top: 14px; display: flex; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--suave); }
+  .treino span { padding: 4px 10px; border-radius: 8px; background: rgba(0, 0, 0, .3); border: 1px solid var(--linha); }
+
+  /* mapa */
+  .mapa { border-radius: 10px; overflow: auto; height: 420px; background: #000; border: 1px solid var(--linha); }
+  .mapa img { display: block; width: 100%; }
+
+  /* pokédex */
+  .dex { display: grid; grid-template-columns: repeat(auto-fill, minmax(58px, 1fr)); gap: 6px; }
+  .dex div { position: relative; aspect-ratio: 1; border-radius: 8px; background: rgba(0, 0, 0, .3); border: 1px solid var(--linha); display: grid; place-items: center; }
+  .dex img { width: 100%; height: 100%; }
+  .dex span { position: absolute; top: 2px; left: 4px; font-size: 9px; color: var(--apagado); }
+  .dex .nunca img { visibility: hidden; } .dex .visto img { filter: brightness(0) invert(.25); }
+  .dex .tem { border-color: rgba(229, 57, 53, .35); }
+
+  /* linha do tempo e diário */
+  .filtros { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .filtros button { padding: 5px 12px; border-radius: 20px; border: 1px solid var(--linha); background: none; color: var(--suave); font-size: 12px; }
+  .filtros button.on { background: var(--vermelho); border-color: var(--vermelho); color: #fff; }
+  ul.eventos, ul.diario { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow: auto; display: flex; flex-direction: column; gap: 4px; }
+  ul.eventos li { display: grid; grid-template-columns: 112px 84px 1fr; gap: 10px; padding: 7px 8px; border-radius: 8px; font-size: 12.5px; }
+  ul.eventos li:nth-child(odd) { background: rgba(255, 255, 255, .02); }
+  ul.eventos time, ul.diario time { color: var(--apagado); font-variant-numeric: tabular-nums; }
+  .t { font-size: 10.5px; padding: 2px 6px; border-radius: 5px; background: rgba(255, 255, 255, .06); text-align: center; height: fit-content; }
+  .t-captura, .t-presente { background: rgba(34, 197, 94, .15); color: #86efac; }
+  .t-insignia, .t-historia { background: rgba(255, 196, 0, .15); color: #ffd866; }
+  .t-batalha, .t-derrota { background: rgba(229, 57, 53, .15); color: #ff9c96; }
+  .t-decisao, .t-plano, .t-objetivo { background: rgba(74, 163, 255, .14); color: #a5d0ff; }
+  .t-erro { background: rgba(255, 82, 82, .2); color: #ffb3ae; }
+  ul.diario li { padding: 8px 10px; border-radius: 8px; background: rgba(0, 0, 0, .25); font-size: 12.5px; display: flex; flex-direction: column; gap: 2px; color: #d7d3cd; }
+
+  /* configurações */
+  .popover { position: absolute; right: 20px; top: 70px; z-index: 20; width: 280px; padding: 14px; border-radius: 12px; background: var(--card2); border: 1px solid var(--borda); box-shadow: 0 20px 40px rgba(0, 0, 0, .5); display: none; }
+  .popover.aberto { display: block; }
+  .popover label { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--suave); }
+  .popover dl { margin: 10px 0 0; font-size: 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; }
+  .popover dt { color: var(--apagado); } .popover dd { margin: 0; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; } ::-webkit-scrollbar-thumb { background: #2a303b; border-radius: 4px; }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-bola" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M2 12a10 10 0 0 1 20 0z" fill="#e53935"/><path d="M2 12h20" stroke="#111" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="#fff" stroke="#111" stroke-width="2"/><circle cx="12" cy="12" r="10" fill="none" stroke="#111" stroke-width="1.5"/></symbol>
+    <symbol id="i-casa" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-controle" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13.5h.01"/></symbol>
+    <symbol id="i-time" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h6m6 0h6"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-mochila" viewBox="0 0 24 24"><path d="M6 8a6 6 0 0 1 12 0v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1z"/><path d="M9 8V5a3 3 0 0 1 6 0v3M9 14h6"/></symbol>
+    <symbol id="i-dex" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8 17h8"/></symbol>
+    <symbol id="i-mapa" viewBox="0 0 24 24"><path d="m9 4-6 2v14l6-2 6 2 6-2V4l-6 2z"/><path d="M9 4v14M15 6v14"/></symbol>
+    <symbol id="i-historia" viewBox="0 0 24 24"><path d="M5 4h11l3 3v13H5z"/><path d="M9 10h6M9 14h6M9 18h3"/></symbol>
+    <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-livro" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 19v2H6"/></symbol>
+    <symbol id="i-passos" viewBox="0 0 24 24"><path d="M7 16c-1.5 0-3-1.5-3-4s1-5 3-5 3 2.5 3 5-1.5 4-3 4zM17 20c-1.5 0-3-1.5-3-4s1-5 3-5 3 2.5 3 5-1.5 4-3 4z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 5v14l11-7z" fill="currentColor"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></symbol>
+    <symbol id="i-engrenagem" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-alvo" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-cerebro" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a3 3 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></symbol>
+    <symbol id="i-raio" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+    <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+    <symbol id="i-seta" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-moeda" viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="9"/><path d="M12 7v10M9.5 9.5c0-1 1.2-1.5 2.5-1.5s2.5.6 2.5 1.8c0 2.6-5 1.4-5 4.2 0 1.1 1.2 1.9 2.5 1.9s2.5-.6 2.5-1.6"/></symbol>
+    <symbol id="i-espadas" viewBox="0 0 24 24"><path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 17.5 21 6V3h-3L6.5 14.5M11 19l-6-6M8 16l-4 4M5 21l-2-2"/></symbol>
+    <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-bandeira" viewBox="0 0 24 24"><path d="M5 22V4m0 0h11l-2 4 2 4H5"/></symbol>
+    <symbol id="i-bau" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M3 13h18M5 9a7 5 0 0 1 14 0M12 12v3"/></symbol>
+    <symbol id="i-cidade" viewBox="0 0 24 24"><path d="M3 21V10l5-3v14M8 21V4l8 4v13M16 21v-8l5 2v6M3 21h18"/></symbol>
+    <symbol id="i-trofeu" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/></symbol>
+    <symbol id="i-tela-cheia" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol>
+    <symbol id="i-pausa" viewBox="0 0 24 24"><path d="M9 6v12M15 6v12"/></symbol>
+  </defs>
+</svg>
+
 <header>
-  <h1>FireRed · <span>IA jogando</span></h1>
-  <span id="status" class="pilula">parado</span>
-  <div class="meta">
-    <span id="papel"></span>
-    <span>sessão <b id="sessao">0:00:00</b></span>
-    <span>episódio <b id="episodio">0</b></span>
-    <span>ações <b id="acoesTotal">0</b></span>
+  <svg class="paisagem" viewBox="0 0 600 76" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0d0b"/><stop offset="1" stop-color="#8a2416"/></linearGradient>
+      <radialGradient id="sol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf6b"/><stop offset=".6" stop-color="#ff7a3d"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></radialGradient>
+      <linearGradient id="fade" x1="0" x2="1"><stop offset="0" stop-color="#0b0c10"/><stop offset=".35" stop-color="#0b0c10" stop-opacity="0"/></linearGradient>
+    </defs>
+    <rect width="600" height="76" fill="url(#ceu)"/>
+    <circle cx="430" cy="58" r="44" fill="url(#sol)"/>
+    <path d="M0 76 70 30l40 22 60-38 70 44 50-26 70 40 60-34 80 30 50-20 50 28v0H0z" fill="#1a0806" opacity=".9"/>
+    <path d="M0 76 90 48l50 14 70-28 80 34 70-22 90 26 70-18 80 22v0H0z" fill="#0b0c10"/>
+    <rect width="600" height="76" fill="url(#fade)"/>
+  </svg>
+  <div class="marca"><svg width="46" height="46"><use href="#i-bola"/></svg></div>
+  <div class="logo"><b>FireRed <span>AI</span></b><small>a IA jogando Pokémon FireRed</small></div>
+  <div class="chips">
+    <div class="chip"><svg class="ic"><use href="#i-relogio"/></svg><div><small>Sessão</small><b id="sessao">0:00:00</b></div></div>
+    <div class="chip"><svg class="ic"><use href="#i-livro"/></svg><div><small>Episódio</small><b id="episodio">0</b></div></div>
+    <div class="chip"><svg class="ic"><use href="#i-passos"/></svg><div><small>Ações</small><b id="acoesTotal">0</b></div></div>
+    <div class="chip estado"><i class="ponto" id="pontoEstado"></i><div><small>Estado</small><b id="status">parado</b></div></div>
   </div>
-  <div class="botoes">
-    <button class="jogar" id="btnJogar">▶ Jogar</button>
-    <button class="parar" id="btnParar">■ Parar</button>
+  <div class="acoes-topo">
+    <button class="btn jogar" id="btnJogar"><svg class="ic"><use href="#i-play"/></svg>Jogar</button>
+    <button class="btn parar" id="btnParar"><svg class="ic"><use href="#i-stop"/></svg>Parar</button>
+    <button class="btn icone" id="btnConfig" title="Configurações"><svg class="ic"><use href="#i-engrenagem"/></svg></button>
   </div>
 </header>
+<div class="popover" id="config">
+  <label><input type="checkbox" id="optTela" checked> Atualizar a tela ao vivo</label>
+  <label><input type="checkbox" id="optEventos" checked> Atualizar a linha do tempo</label>
+  <dl>
+    <dt>Modelo</dt><dd id="cfgModelo">—</dd>
+    <dt>Selvagens</dt><dd id="cfgSelvagens">—</dd>
+    <dt>Restrição</dt><dd id="cfgRestricao">—</dd>
+    <dt>Custo</dt><dd id="cfgCusto">—</dd>
+  </dl>
+</div>
+
+<nav class="lateral" id="lateral">
+  <a href="#inicio" class="ativo"><svg class="ic"><use href="#i-casa"/></svg>Início</a>
+  <a href="#jogo"><svg class="ic"><use href="#i-controle"/></svg>Jogo</a>
+  <a href="#time"><svg class="ic"><use href="#i-time"/></svg>Time</a>
+  <a href="#mochila"><svg class="ic"><use href="#i-mochila"/></svg>Mochila</a>
+  <a href="#pokedex"><svg class="ic"><use href="#i-dex"/></svg>Pokédex</a>
+  <a href="#mapa"><svg class="ic"><use href="#i-mapa"/></svg>Mapa</a>
+  <a href="#historia"><svg class="ic"><use href="#i-historia"/></svg>História</a>
+  <div class="lema">Kanto<br>sempre<br>vive</div>
+</nav>
+
 <main>
-  <section class="card c5">
-    <h2>Tela ao vivo</h2>
-    <img id="tela" class="px" alt="tela do jogo">
-    <div class="local" id="local">—</div>
-  </section>
-  <section class="card c7">
-    <h2>Objetivo e plano <small id="papelPlano"></small></h2>
-    <div id="objetivo">—</div>
-    <div id="motivo"></div>
-    <div id="estrategia"></div>
-    <ol class="plano" id="plano"></ol>
-    <h2>Pensando agora</h2>
-    <div id="pensamento">—</div>
-  </section>
-  <section class="card c12">
-    <h2>Time <small id="timeInfo"></small></h2>
-    <div class="equipe" id="equipe"></div>
-  </section>
-  <section class="card c7">
-    <h2>Progresso</h2>
-    <div class="insignias" id="insignias"></div>
-    <div class="numeros">
-      <div class="numero"><b id="dinheiro">—</b><span>dinheiro</span></div>
-      <div class="numero"><b id="tempoJogo">—</b><span>tempo de jogo</span></div>
-      <div class="numero"><b id="pokedex">—</b><span>Pokédex</span></div>
-      <div class="numero"><b id="nCapturas">0</b><span>capturados pela IA</span></div>
-      <div class="numero"><b id="nBatalhas">0</b><span>batalhas</span></div>
-      <div class="numero"><b id="nBolas">0</b><span>bolas usadas</span></div>
-      <div class="numero"><b id="nMarcos">—</b><span>história (marcos)</span></div>
-      <div class="numero"><b id="nItens">—</b><span>itens do mapa pegos</span></div>
+  <section class="card c6" id="inicio">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Tela ao vivo <small>Pokémon FireRed · Switch</small></h2>
+    <div class="tela" id="telaBox"><img id="tela" class="px" alt="tela do jogo"><span class="selo" id="seloLocal">—</span></div>
+    <div class="rodape-tela">
+      <span class="vivo parado" id="vivo"><i></i><span id="vivoTxt">PARADO</span></span>
+      <span>Local: <b id="local">—</b></span>
+      <span>240×160</span>
+      <div class="dir">
+        <button id="btnPausaTela" title="Pausar a tela"><svg class="ic"><use href="#i-pausa"/></svg></button>
+        <button id="btnTelaCheia" title="Tela cheia"><svg class="ic"><use href="#i-tela-cheia"/></svg></button>
+      </div>
     </div>
   </section>
+
+  <section class="card c6">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Objetivo e plano <small id="papel"></small></h2>
+    <div class="objetivo">
+      <div class="alvo"><svg class="ic"><use href="#i-alvo"/></svg></div>
+      <div><div class="rotulo r" style="margin:0 0 4px">Objetivo principal</div><h3 id="objetivo">—</h3><p id="motivo"></p></div>
+    </div>
+    <div class="rotulo a"><svg class="ic"><use href="#i-cerebro"/></svg>Pensando agora</div>
+    <div class="pensando"><span id="pensamento">—</span><span class="reticencias" id="reticencias">•••</span></div>
+    <div class="rotulo a"><svg class="ic"><use href="#i-raio"/></svg>Próxima ação</div>
+    <div class="proxima"><svg class="ic"><use href="#i-passos"/></svg><span id="proxima">—</span><svg class="ic" style="margin-left:auto"><use href="#i-seta"/></svg></div>
+    <div class="rotulo l"><svg class="ic"><use href="#i-alerta"/></svg>Alertas importantes</div>
+    <div class="alertas" id="alertas"></div>
+    <details class="plano">
+      <summary id="resumoPlano">Plano completo e estratégia</summary>
+      <ol class="passos" id="plano"></ol>
+      <div class="estrategia" id="estrategia"></div>
+    </details>
+  </section>
+
+  <section class="card c7" id="jogo">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Progresso da jornada</h2>
+    <div class="stats">
+      <div class="stat"><div class="ico ouro"><svg class="ic"><use href="#i-moeda"/></svg></div><div><small>Dinheiro</small><b id="dinheiro">—</b></div><svg class="ic fundo"><use href="#i-moeda"/></svg></div>
+      <div class="stat"><div class="ico azul"><svg class="ic"><use href="#i-relogio"/></svg></div><div><small>Tempo de jogo</small><b id="tempoJogo">—</b></div><svg class="ic fundo"><use href="#i-relogio"/></svg></div>
+      <div class="stat"><div class="ico verm"><svg class="ic"><use href="#i-dex"/></svg></div><div><small>Pokédex</small><b id="pokedexNum">—</b></div><svg class="ic fundo"><use href="#i-dex"/></svg></div>
+      <div class="stat"><div class="ico verm"><svg class="ic"><use href="#i-time"/></svg></div><div><small>Capturados pela IA</small><b id="nCapturas">0</b></div><svg class="ic fundo"><use href="#i-time"/></svg></div>
+      <div class="stat"><div class="ico lar"><svg class="ic"><use href="#i-espadas"/></svg></div><div><small>Batalhas</small><b id="nBatalhas">0</b></div><svg class="ic fundo"><use href="#i-espadas"/></svg></div>
+      <div class="stat"><div class="ico ouro"><svg class="ic"><use href="#i-mochila"/></svg></div><div><small>Bolas usadas</small><b id="nBolas">0</b></div><svg class="ic fundo"><use href="#i-mochila"/></svg></div>
+      <div class="stat"><div class="ico verde"><svg class="ic"><use href="#i-grafico"/></svg></div><div><small>História (marcos)</small><b id="nMarcos">—</b></div><svg class="ic fundo"><use href="#i-bandeira"/></svg></div>
+      <div class="stat"><div class="ico roxo"><svg class="ic"><use href="#i-bau"/></svg></div><div><small>Itens do mapa pegos</small><b id="nItens">—</b></div><svg class="ic fundo"><use href="#i-bau"/></svg></div>
+    </div>
+  </section>
+
   <section class="card c5">
-    <h2>Próximo líder</h2>
-    <div id="lider" class="vazio">—</div>
+    <h2><svg class="bola"><use href="#i-bola"/></svg><span id="tituloLider">Próximo líder de ginásio</span></h2>
+    <div id="lider"></div>
+    <div class="insignias" id="insignias"></div>
   </section>
-  <section class="card c12">
-    <h2>História e treino <small id="treinoInfo"></small></h2>
-    <div class="barra"><i id="barraHistoria" style="background: var(--roxo)"></i></div>
-    <ol class="plano" id="roteiro"></ol>
+
+  <section class="card c12" id="time">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Time atual <small id="timeInfo"></small></h2>
+    <div class="equipe" id="equipe"></div>
   </section>
-  <section class="card c4">
-    <h2>Mochila <small id="mochilaLida"></small></h2>
-    <div class="itens" id="mochila"></div>
+
+  <section class="card c6" id="mochila">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Mochila <small id="mochilaLida"></small></h2>
+    <div class="itens" id="itens"></div>
   </section>
-  <section class="card c4">
-    <h2>PC <small id="pcLido"></small></h2>
-    <div class="capturados" id="pc"></div>
-  </section>
-  <section class="card c4">
-    <h2>Capturados <small id="capInfo"></small></h2>
+
+  <section class="card c6">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Capturados recentes <small id="capInfo"></small></h2>
     <div class="capturados" id="capturados"></div>
   </section>
+
   <section class="card c12">
-    <h2>Pokédex <small id="dexInfo"></small></h2>
+    <h2><svg class="bola"><use href="#i-bola"/></svg>História e treino <small id="marcosInfo"></small></h2>
+    <div class="cidades" id="cidades"></div>
+    <div class="treino" id="treino"></div>
+  </section>
+
+  <section class="card c12" id="pokedex">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Pokédex de Kanto <small id="dexInfo"></small></h2>
     <div class="dex" id="dex"></div>
   </section>
-  <section class="card c8">
-    <h2>Linha do tempo <small>tudo que a IA decidiu e fez</small></h2>
+
+  <section class="card c5" id="mapa">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Mapa atual <small id="mapaInfo"></small></h2>
+    <div class="mapa"><img id="mapaImg" class="px" alt="mapa atual com o rastro da IA"></div>
+  </section>
+
+  <section class="card c7">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>PC <small id="pcLido"></small></h2>
+    <div class="capturados" id="pc"></div>
+  </section>
+
+  <section class="card c8" id="historia">
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Linha do tempo <small>tudo o que a IA decidiu e fez</small></h2>
     <div class="filtros" id="filtros"></div>
     <ul class="eventos" id="eventos"></ul>
   </section>
+
   <section class="card c4">
-    <h2>Diário</h2>
+    <h2><svg class="bola"><use href="#i-bola"/></svg>Diário</h2>
     <ul class="diario" id="diario"></ul>
   </section>
 </main>
+
 <script>
   const INSIGNIAS = ["Boulder", "Cascade", "Thunder", "Rainbow", "Soul", "Marsh", "Volcano", "Earth"];
+  const TIPO_GINASIO = { Boulder: "Pedra", Cascade: "Água", Thunder: "Elétrico", Rainbow: "Planta", Soul: "Veneno", Marsh: "Psíquico", Volcano: "Fogo", Earth: "Terra" };
+  const CIDADE_GINASIO = { Boulder: "Pewter", Cascade: "Cerulean", Thunder: "Vermilion", Rainbow: "Celadon", Soul: "Fuchsia", Marsh: "Saffron", Volcano: "Cinnabar", Earth: "Viridian" };
+  const CIDADES = [["PALLET_TOWN", "Pallet Town"], ["VIRIDIAN_CITY", "Viridian City"], ["PEWTER_CITY", "Pewter City"],
+    ["CERULEAN_CITY", "Cerulean City"], ["VERMILION_CITY", "Vermilion City"], ["LAVENDER_TOWN", "Lavender Town"],
+    ["CELADON_CITY", "Celadon City"], ["FUCHSIA_CITY", "Fuchsia City"], ["SAFFRON_CITY", "Saffron City"],
+    ["CINNABAR_ISLAND", "Cinnabar Island"], ["INDIGO_PLATEAU", "Indigo Plateau"]];
   const FILTROS = {
-    "Importantes": (e) => !["acao", "mapa", "decisao"].includes(e.tipo),
+    "Importantes": (e) => !["acao", "mapa", "decisao", "sessao", "episodio"].includes(e.tipo),
     "Decisões": (e) => ["decisao", "plano", "passo", "objetivo", "replanejar"].includes(e.tipo),
     "Capturas": (e) => ["captura", "presente"].includes(e.tipo),
-    "Itens": (e) => ["item", "mochila", "compra"].includes(e.tipo),
     "Batalhas": (e) => ["batalha", "derrota", "insignia"].includes(e.tipo),
+    "Itens": (e) => ["item", "mochila", "compra"].includes(e.tipo),
     "Mapas": (e) => e.tipo === "mapa",
     "Tudo": () => true,
   };
-  const ROTULOS = { decisao: "decisão", plano: "plano", passo: "passo", captura: "captura", presente: "presente", item: "item",
-    mochila: "mochila", compra: "compra", batalha: "batalha", derrota: "derrota", cura: "cura", save: "save", insignia: "insígnia",
-    mapa: "mapa", nota: "nota", objetivo: "objetivo", episodio: "episódio", acao: "ação", leitura: "leitura", replanejar: "replanejar",
-    evolucao: "evolução", treino: "treino", troca_pc: "PC", historia: "história", dialogo: "diálogo", outro: "outro" };
-  let filtro = "Importantes";
+  const ROTULOS = { decisao: "decisão", captura: "captura", insignia: "insígnia", historia: "história", evolucao: "evolução",
+    acao: "ação", episodio: "episódio", troca_pc: "PC", dialogo: "diálogo" };
+  let filtro = "Importantes", telaPausada = false, ultimoMapa = "", posicaoMapa = null;
+
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, texto) => { const e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; };
+  const icone = (nome, cls) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", "ic " + (cls || "")); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + nome); s.append(u); return s; };
   const sprite = (tipo, nome) => `/sprite/${tipo}/${encodeURIComponent(nome)}.png`;
-  function img(tipo, nome, cls) { const i = el("img", "px " + (cls || "")); i.src = sprite(tipo, nome); i.alt = nome; i.onerror = () => { i.style.visibility = "hidden"; }; return i; }
-
+  function img(tipo, nome, cls) { const i = el("img", "px " + (cls || "")); i.src = sprite(tipo, nome); i.alt = nome; i.loading = "lazy"; i.onerror = () => { i.style.visibility = "hidden"; }; return i; }
+  const titulo = (s) => (s || "").toLowerCase().replace(/(^|[\s_-])\w/g, (m) => m.toUpperCase()).replace(/_/g, " ");
+  const relogio = (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   function nomeMapa(id) {
     if (!id) return "—";
     return id.replace(/^MAP_/, "").replace(/([A-Z]+)(\d+)/g, "$1 $2").split("_")
       .map((p) => (/^\d+F$|^B\d+F$/.test(p) ? p : p.charAt(0) + p.slice(1).toLowerCase())).join(" ");
   }
-  const relogio = (s) => `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-  const titulo = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+  const fracaoHP = (p) => (p.hp_max ? p.hp / p.hp_max : typeof p.hp === "number" && p.hp <= 1 ? p.hp : null);
+  const corHP = (r) => (r > .5 ? "var(--ok)" : r > .2 ? "var(--alerta)" : "var(--perigo)");
+  const semPP = (g) => { const m = /(\d+)\s*\/\s*(\d+)/.exec(g); return m && +m[1] === 0; };
 
-  function corHP(r) { return r > .5 ? "var(--ok)" : r > .2 ? "var(--alerta)" : "var(--perigo)"; }
-
-  function desenharTime(time) {
-    const box = $("equipe");
-    if (!time.length) { box.replaceChildren(el("div", "vazio", "a IA ainda não leu o time")); return; }
-    box.replaceChildren(...time.map((p) => {
-      const c = el("div", "pkm");
-      c.append(img("pokemon", p.especie));
-      c.append(el("div", "nome", p.apelido || titulo(p.especie)));
-      c.append(el("div", "nv", `Nv ${p.nivel}${p.status ? " · " + p.status : ""}`));
-      // leitura da tela grava a fração da barra; a memória antiga guardava atual/máximo
-      const r = p.hp_max ? p.hp / p.hp_max : (typeof p.hp === "number" && p.hp <= 1 ? p.hp : null);
-      const barra = el("div", "barra"); const i = el("i");
-      i.style.width = r == null ? "0" : Math.max(0, Math.min(1, r)) * 100 + "%"; i.style.background = r == null ? "transparent" : corHP(r);
-      barra.append(i); c.append(barra);
-      c.append(el("div", "hp", p.hp_max ? `HP ${p.hp}/${p.hp_max}` : r == null ? "HP ?" : `HP ${Math.round(r * 100)}%`));
-      const g = el("div", "golpes");
-      for (const golpe of p.golpes || []) {
-        const m = /(\d+)\s*\/\s*(\d+)/.exec(golpe);
-        g.append(el("span", m && +m[1] / +m[2] <= .25 ? "baixo" : "", golpe));
-      }
-      c.append(g); return c;
-    }));
+  function alertas(e) {
+    const lista = [];
+    const rodando = e.jogador_rodando;
+    if ((e.status || "").startsWith("erro")) lista.push(["grave", `${e.status}${e.pensamento ? ": " + e.pensamento : ""}`]);
+    for (const p of e.time || []) {
+      const r = fracaoHP(p);
+      if (r != null && r <= .25) lista.push([r === 0 ? "grave" : "", `${titulo(p.especie)} com ${Math.round(r * 100)}% de HP`]);
+      const zerados = (p.golpes || []).filter(semPP);
+      if (zerados.length) lista.push(["", `${titulo(p.especie)} sem PP em ${zerados.map((g) => g.split(" ")[0]).join(", ")}`]);
+    }
+    const bolas = Object.entries(e.mochila || {}).filter(([n]) => /BALL/.test(n)).reduce((s, [, q]) => s + q, 0);
+    if (e.mochila && !bolas) lista.push(["", "Nenhuma Poké Ball na mochila"]);
+    if (!rodando && !lista.length) lista.push(["ok", "A IA está parada. Nenhum alerta no momento."]);
+    if (rodando && !lista.length) lista.push(["ok", "Nenhum alerta no momento."]);
+    return lista.slice(0, 4);
   }
 
-  function desenharLider(lider, time) {
-    const box = $("lider");
-    if (!lider) { box.className = ""; box.replaceChildren(el("div", "", "Todas as insígnias! Próximo: Elite dos 4.")); return; }
-    box.className = "lider";
+  function desenharTime(time) {
+    const cards = (time || []).map((p) => {
+      const c = el("div", "pkm");
+      c.append(img("pokemon", p.especie), el("div", "nome", p.apelido || titulo(p.especie)), el("div", "nv", `Nv ${p.nivel}${p.status ? " · " + p.status : ""}`));
+      const r = fracaoHP(p), barra = el("div", "barra"), i = el("i");
+      i.style.width = r == null ? "0" : Math.max(0, Math.min(1, r)) * 100 + "%"; i.style.background = r == null ? "transparent" : corHP(r);
+      barra.append(i); c.append(barra, el("div", "hp", p.hp_max ? `HP ${p.hp}/${p.hp_max}` : r == null ? "HP ?" : `HP ${Math.round(r * 100)}%`));
+      const g = el("div", "golpes");
+      for (const golpe of p.golpes || []) { const m = /(\d+)\s*\/\s*(\d+)/.exec(golpe); g.append(el("span", m && +m[1] / +m[2] <= .25 ? "baixo" : "", golpe)); }
+      c.append(g); return c;
+    });
+    while (cards.length < 6) { const v = el("div", "pkm vazio"); v.append(el("div", "", "Vazio")); cards.push(v); }
+    $("equipe").replaceChildren(...cards);
+  }
+
+  function desenharLider(e) {
+    const lider = e.proximo_lider, time = e.time || [];
+    if (!lider) {
+      const liga = (e.marcos || {}).liga;
+      $("tituloLider").textContent = liga ? "Campeão de Kanto" : "Liga Pokémon";
+      const box = el("div", "campeao"), t = el("div", "trofeu"); t.append(icone("trofeu"));
+      const info = el("div");
+      info.append(el("span", "tag", liga ? "Hall da Fama" : "Indigo Plateau"), el("h3", "", liga ? "Elite dos 4 e Campeão vencidos" : "Todas as insígnias: próximo, a Elite dos 4"));
+      if (liga) info.append(el("div", "comparar", `${liga.quando} · ${liga.resultado || ""}`));
+      box.append(t, info); $("lider").replaceChildren(box); return;
+    }
+    $("tituloLider").textContent = "Próximo líder de ginásio";
+    const box = el("div", "lider"), r = el("div", "retrato"); r.append(img("treinador", lider.pic));
     const info = el("div");
-    info.append(el("div", "nome", lider.nome), el("div", "sub", `${lider.insignia} Badge`));
+    info.append(el("span", "tag", `Ginásio de ${CIDADE_GINASIO[lider.insignia] || ""}`), el("h3", "", titulo(lider.nome)));
+    const tipo = el("span", "tipo"); tipo.append(icone("bola"), document.createTextNode(TIPO_GINASIO[lider.insignia] || lider.insignia)); info.append(tipo);
     const mini = el("div", "mini");
     for (const [esp, nv] of lider.time) { const d = el("div"); d.append(img("pokemon", esp), document.createTextNode(`${titulo(esp)} ${nv}`)); mini.append(d); }
     info.append(mini);
-    const as = Math.max(...lider.time.map((t) => t[1]));
-    const nossos = (time || []).map((p) => p.nivel);
-    if (nossos.length) {
-      const melhor = Math.max(...nossos), media = Math.round(nossos.reduce((a, b) => a + b, 0) / nossos.length);
-      const c = el("div", "comparar", `Ás dele: nv ${as} · nosso melhor: nv ${melhor} · média do time: nv ${media}`);
-      c.style.color = melhor >= as ? "var(--ok)" : "var(--alerta)"; info.append(c);
+    if (time.length) {
+      const as = Math.max(...lider.time.map((t) => t[1])), melhor = Math.max(...time.map((p) => p.nivel));
+      const c = el("div", "comparar", `Ás dele: nv ${as} · nosso melhor: nv ${melhor}`); c.style.color = melhor >= as ? "var(--ok)" : "var(--alerta)"; info.append(c);
     }
-    box.replaceChildren(img("treinador", lider.pic, "retrato"), info);
+    box.append(r, info); $("lider").replaceChildren(box);
   }
 
-  function desenharMochila(mochila, lida) {
-    const itens = Object.entries(mochila || {});
-    $("mochilaLida").textContent = lida ? `lida em ${lida}, ajustada a cada uso` : "ainda não lida";
-    $("mochila").replaceChildren(...(itens.length ? itens.map(([nome, qtd]) => {
-      const d = el("div", "item"); d.append(img("item", nome), el("span", "", titulo(nome)), el("b", "", "×" + qtd)); return d;
-    }) : [el("div", "vazio", "vazia ou desconhecida")]));
+  function desenharInsignias(e) {
+    const tem = (e.insignias || []).join(" ").toLowerCase();
+    const n = INSIGNIAS.filter((i) => tem.includes(i.toLowerCase())).length;
+    $("insignias").replaceChildren(...INSIGNIAS.map((nome, i) => {
+      const d = el("div", "insignia px" + (tem.includes(nome.toLowerCase()) ? " tem" : ""));
+      d.style.backgroundImage = `url(${sprite("insignias", "todas")})`; d.style.backgroundPosition = `${-32 * i}px 0`; d.title = nome + " Badge"; return d;
+    }), el("small", "", `Insígnias de Kanto ${n}/8`));
   }
 
-  function desenharCapturados(lista) {
-    $("capInfo").textContent = `${lista.length} nesta partida`;
-    $("capturados").replaceChildren(...(lista.length ? [...lista].reverse().map((c) => {
-      const d = el("div", "cap"); d.title = `${c.como || ""} · ${c.quando || ""}`;
-      d.append(img("pokemon", c.especie), el("b", "", titulo(c.especie)), document.createTextNode(`nv ${c.nivel} · ${nomeMapa(c.local)}`));
-      return d;
-    }) : [el("div", "vazio", "nenhuma captura ainda")]));
+  function desenharCidades(e) {
+    const visitados = new Set(e.visitados || []), atual = (e.local && e.local.mapa) || "";
+    let ultima = -1;
+    const nos = CIDADES.map(([id, nome], i) => {
+      const foi = [...visitados].some((m) => m.startsWith("MAP_" + id));
+      if (foi) ultima = i;
+      const c = el("div", "cidade" + (foi ? " visitada" : "") + (atual.startsWith("MAP_" + id) ? " atual" : ""));
+      const no = el("div", "no"); no.append(icone(i === CIDADES.length - 1 ? "trofeu" : "cidade")); c.append(no, el("span", "", nome)); return c;
+    });
+    const trilha = el("div", "trilha"); trilha.style.width = ultima < 0 ? "0" : `${(91 * ultima) / (CIDADES.length - 1)}%`;
+    $("cidades").replaceChildren(trilha, ...nos);
+    const rot = e.roteiro || [], feitos = rot.filter((m) => m.feito).length;
+    $("marcosInfo").textContent = rot.length ? `${feitos}/${rot.length} marcos da história` : "";
+    const t = e.treino || {}, alvos = Object.entries(t.alvos || {}), chips = [];
+    for (const [k, v] of alvos) chips.push(el("span", "", `Treino: ${titulo(k)} até nv ${v}`));
+    if (t.escolta) chips.push(el("span", "", `Escolta: ${titulo(t.escolta)}`));
+    chips.push(el("span", "", `Selvagens: ${e.modo_selvagens || "fugir"}`));
+    const proximo = rot.find((m) => !m.feito && m.pronto); if (proximo) chips.push(el("span", "", `Próximo marco: ${proximo.desc}`));
+    $("treino").replaceChildren(...chips);
+  }
+
+  function desenharLista(alvo, lista, vazio, montar) {
+    $(alvo).replaceChildren(...(lista.length ? lista.map(montar) : [el("div", "vazio", vazio)]));
   }
 
   let dexAssinatura = "";
   function desenharDex(e) {
     const cap = new Set(e.pokedex_capturados || []), vis = new Set(e.pokedex_vistos || []);
-    $("dexInfo").textContent = `${cap.size} capturados · ${vis.size} vistos de 151` + (e.pokedex_lida_em ? ` · lida em ${e.pokedex_lida_em}` : " · ainda não lida");
+    $("dexInfo").textContent = `${cap.size} capturados · ${vis.size} vistos de 151`;
     const assinatura = [...cap].join() + "|" + [...vis].join();
-    if (assinatura === dexAssinatura || !(e.kanto || []).length) return;  // 151 sprites: só redesenha quando muda
+    if (assinatura === dexAssinatura || !(e.kanto || []).length) return;
     dexAssinatura = assinatura;
     $("dex").replaceChildren(...e.kanto.map((esp, i) => {
       const d = el("div", cap.has(esp) ? "tem" : vis.has(esp) ? "visto" : "nunca");
-      d.title = `#${String(i + 1).padStart(3, "0")} ${titulo(esp)}` + (cap.has(esp) ? " (capturado)" : vis.has(esp) ? " (visto)" : "");
-      d.append(el("span", "", String(i + 1)), img("pokemon", esp)); return d;
+      d.title = `#${String(i + 1).padStart(3, "0")} ${titulo(esp)}`; d.append(el("span", "", String(i + 1)), img("pokemon", esp)); return d;
     }));
   }
 
   async function atualizar() {
     let e;
     try { e = await (await fetch("/estado")).json(); } catch { return; }
-    const st = $("status");
-    st.textContent = e.jogador_rodando ? e.status : "parado";
-    st.className = "pilula " + (e.jogador_rodando && e.status === "jogando" ? "jogando" : (e.status || "").startsWith("erro") ? "erro" : "");
-    $("btnJogar").disabled = e.jogador_rodando; $("btnParar").disabled = !e.jogador_rodando;
-    $("papel").textContent = e.modelo || ""; $("papelPlano").textContent = e.plano_motivo ? "" : "";
+    const rodando = e.jogador_rodando, erro = (e.status || "").startsWith("erro");
+    $("status").textContent = rodando ? (erro ? "erro" : e.status) : "parado";
+    $("pontoEstado").className = "ponto" + (rodando ? (erro ? " erro" : " jogando") : "");
+    $("btnJogar").disabled = rodando; $("btnParar").disabled = !rodando;
+    $("vivo").className = "vivo" + (rodando ? "" : " parado"); $("vivoTxt").textContent = rodando ? "AO VIVO" : "PARADO";
+    $("reticencias").style.display = rodando ? "" : "none";
     $("sessao").textContent = relogio(e.sessao_s || 0);
-    $("episodio").textContent = e.episodios; $("acoesTotal").textContent = e.acoes_total;
-    $("objetivo").textContent = e.objetivo || "—";
+    $("episodio").textContent = (e.episodios || 0).toLocaleString("pt-BR"); $("acoesTotal").textContent = (e.acoes_total || 0).toLocaleString("pt-BR");
+    $("papel").textContent = e.modelo || "";
+    $("objetivo").textContent = e.objetivo || "Sem objetivo: o estrategista define no próximo episódio";
     $("motivo").textContent = e.plano_motivo || "";
-    $("estrategia").textContent = e.estrategia || "";
-    const atual = (e.plano || []).findIndex((p) => !p.feito);
-    $("plano").replaceChildren(...(e.plano || []).map((p, i) => {
-      const li = el("li", p.feito ? "feito" : i === atual ? "atual" : "");
-      const t = el("div", "txt", p.passo); if (p.resultado) t.append(el("span", "res", "✓ " + p.resultado));
-      li.append(el("div", "marca"), t); return li;
-    }));
-    if (!(e.plano || []).length) $("plano").replaceChildren(el("li", "vazio", "sem plano: o estrategista monta no próximo episódio"));
     $("pensamento").textContent = e.pensamento || "—";
-    $("local").replaceChildren(nomeMapa(e.local && e.local.mapa));
-    if (e.local) $("local").append(el("small", "", `(${e.local.x}, ${e.local.y})`));
-    desenharTime(e.time || []);
-    $("timeInfo").textContent = (e.time || []).length ? `${e.time.length} Pokémon · PC: ${(e.pc || []).length}` : "";
-    const tem = (e.insignias || []).join(" ").toLowerCase();
-    $("insignias").replaceChildren(...INSIGNIAS.map((n, i) => {
-      const d = el("div", "insignia px" + (tem.includes(n.toLowerCase()) ? " tem" : ""));
-      d.style.backgroundImage = `url(${sprite("insignias", "todas")})`; d.style.backgroundPosition = `${-48 * i}px 0`; d.title = n + " Badge";
-      return d;
-    }));
-    $("dinheiro").textContent = e.dinheiro == null ? "—" : "₽" + e.dinheiro.toLocaleString("pt-BR");
-    $("tempoJogo").textContent = e.tempo_jogo || "—";
-    $("pokedex").textContent = e.pokedex == null ? "—" : e.pokedex;
+    const plano = e.plano || [], atual = plano.findIndex((p) => !p.feito);
+    $("proxima").textContent = atual >= 0 ? plano[atual].passo : "Sem passo pendente: o estrategista monta o próximo plano";
+    $("resumoPlano").textContent = `Plano completo (${plano.filter((p) => p.feito).length}/${plano.length}) e estratégia`;
+    $("plano").replaceChildren(...plano.map((p, i) => el("li", p.feito ? "feito" : i === atual ? "atual" : "", p.passo)));
+    $("estrategia").textContent = e.estrategia || "";
+    $("alertas").replaceChildren(...alertas(e).map(([nivel, texto]) => { const a = el("div", "alerta " + nivel); a.append(icone(nivel === "ok" ? "check" : "alerta"), el("span", "", texto)); return a; }));
+    const local = e.local ? `${nomeMapa(e.local.mapa)} (${e.local.x}, ${e.local.y})` : "—";
+    $("local").textContent = local; $("seloLocal").textContent = e.local ? nomeMapa(e.local.mapa) : "—";
+    $("dinheiro").textContent = e.dinheiro == null ? "—" : "₽ " + e.dinheiro.toLocaleString("pt-BR");
+    $("tempoJogo").textContent = e.tempo_jogo || "—"; $("pokedexNum").textContent = e.pokedex == null ? "—" : `${e.pokedex}/151`;
     const c = e.contadores || {};
-    $("nCapturas").textContent = (e.capturados || []).length;
-    $("nBatalhas").textContent = c.batalhas_terminadas || 0;
-    $("nBolas").textContent = c.bolas_usadas || 0;
-    const rot = e.roteiro || [], feitos = rot.filter((m) => m.feito);
-    $("nMarcos").textContent = rot.length ? `${feitos.length}/${rot.length}` : "—";
+    $("nCapturas").textContent = (e.capturados || []).length; $("nBatalhas").textContent = c.batalhas_terminadas || 0; $("nBolas").textContent = c.bolas_usadas || 0;
+    const rot = e.roteiro || [];
+    $("nMarcos").textContent = rot.length ? `${rot.filter((m) => m.feito).length}/${rot.length}` : "—";
     $("nItens").textContent = e.itens_total ? `${(e.itens_coletados || []).length}/${e.itens_total}` : "—";
-    $("barraHistoria").style.width = rot.length ? (100 * feitos.length / rot.length) + "%" : "0";
-    // o último feito e os que estão liberados para fazer agora
-    const mostrar = [...feitos.slice(-1), ...rot.filter((m) => !m.feito && m.pronto)];
-    $("roteiro").replaceChildren(...mostrar.map((m) => {
-      const li = el("li", m.feito ? "feito" : "atual"); li.append(el("div", "marca"), el("div", "txt", m.desc)); return li;
-    }));
-    const t = e.treino || {}, alvos = Object.entries(t.alvos || {});
-    $("treinoInfo").textContent = (alvos.length ? `treino: ${alvos.map(([k, v]) => `${titulo(k)} até nv ${v}`).join(", ")}` +
-      (t.escolta ? ` · escolta ${titulo(t.escolta)}` : "") + " · " : "") + `selvagens: ${e.modo_selvagens || "fugir"}`;
-    desenharLider(e.proximo_lider, e.time);
-    desenharMochila(e.mochila, e.mochila_lida_em);
-    desenharCapturados(e.capturados || []);
-    desenharDex(e);
-    $("pcLido").textContent = e.pc_lido_em ? `lido em ${e.pc_lido_em}` : "ainda não lido";
-    $("pc").replaceChildren(...((e.pc || []).length ? e.pc.map((p) => {
-      const d = el("div", "cap"); d.append(img("pokemon", p.especie), el("b", "", titulo(p.especie)), document.createTextNode(`nv ${p.nivel}`));
-      return d;
-    }) : [el("div", "vazio", e.pc_lido_em ? "nenhum Pokémon guardado" : "a IA ainda não abriu o PC")]));
-    $("diario").replaceChildren(...[...(e.diario || [])].reverse().slice(0, 60).map((d) => {
-      const li = el("li"); li.append(el("time", "", d.t), document.createTextNode(d.texto)); return li;
-    }));
+    desenharLider(e); desenharInsignias(e); desenharTime(e.time); desenharCidades(e); desenharDex(e);
+    $("timeInfo").textContent = (e.time || []).length ? `${e.time.length}/6 · PC: ${(e.pc || []).length}` : "a IA ainda não leu o time";
+    const itens = Object.entries(e.mochila || {});
+    $("mochilaLida").textContent = e.mochila_lida_em ? `${itens.length} itens · lida em ${e.mochila_lida_em}` : "ainda não lida";
+    desenharLista("itens", itens, "vazia ou desconhecida", ([nome, qtd]) => { const d = el("div", "item"); d.append(img("item", nome), el("span", "", titulo(nome)), el("b", "", "×" + qtd)); return d; });
+    const capturados = [...(e.capturados || [])].reverse();
+    $("capInfo").textContent = `${capturados.length} nesta campanha`;
+    desenharLista("capturados", capturados.slice(0, 24), "Nenhum Pokémon capturado ainda. A jornada está só começando!", (p) => {
+      const d = el("div", "cap"); d.title = `${p.como || ""} · ${p.quando || ""}`; d.append(img("pokemon", p.especie), el("b", "", titulo(p.especie)), document.createTextNode(`nv ${p.nivel} · ${nomeMapa(p.local)}`)); return d;
+    });
+    $("pcLido").textContent = e.pc_lido_em ? `${(e.pc || []).length} Pokémon · lido em ${e.pc_lido_em}` : "ainda não lido";
+    desenharLista("pc", e.pc || [], e.pc_lido_em ? "nenhum Pokémon guardado" : "a IA ainda não abriu o PC", (p) => {
+      const d = el("div", "cap"); d.append(img("pokemon", p.especie), el("b", "", titulo(p.especie)), document.createTextNode(`nv ${p.nivel}` + (p.caixa ? ` · caixa ${p.caixa}` : ""))); return d;
+    });
+    $("diario").replaceChildren(...[...(e.diario || [])].reverse().slice(0, 60).map((d) => { const li = el("li"); li.append(el("time", "", d.t), document.createTextNode(d.texto)); return li; }));
+    if (e.local) {
+      const chave = `${e.local.mapa}:${e.local.x},${e.local.y}`;
+      posicaoMapa = e.local;
+      if (chave !== ultimoMapa) { ultimoMapa = chave; $("mapaImg").src = "/mapa.png?" + encodeURIComponent(chave); }
+      $("mapaInfo").textContent = local;
+    }
+    $("cfgModelo").textContent = e.modelo || "—"; $("cfgSelvagens").textContent = e.modo_selvagens || "fugir";
+    $("cfgRestricao").textContent = e.restricao || "nenhuma"; $("cfgCusto").textContent = e.custo_usd != null ? `US$ ${e.custo_usd.toFixed(2)}` : "—";
   }
 
   async function atualizarEventos() {
+    if (!$("optEventos").checked) return;
     let lista;
     try { lista = await (await fetch("/eventos?n=600")).json(); } catch { return; }
-    const f = FILTROS[filtro];
-    $("eventos").replaceChildren(...lista.filter(f).reverse().slice(0, 250).map((e) => {
-      const li = el("li");
-      li.append(el("time", "", e.t), el("span", "tag t-" + e.tipo, ROTULOS[e.tipo] || e.tipo), el("div", "ev-texto", e.texto));
-      return li;
+    $("eventos").replaceChildren(...lista.filter(FILTROS[filtro]).reverse().slice(0, 250).map((e) => {
+      const li = el("li"); li.append(el("time", "", e.t), el("span", "t t-" + e.tipo, ROTULOS[e.tipo] || e.tipo), el("div", "", e.texto)); return li;
     }));
   }
 
@@ -388,7 +644,30 @@
   async function comando(c) { await fetch("/jogador/" + c, { method: "POST" }); setTimeout(atualizar, 800); }
   $("btnJogar").onclick = () => comando("iniciar");
   $("btnParar").onclick = () => comando("parar");
-  function atualizarTela() { $("tela").src = "/tela.png?" + Date.now(); }
+  $("btnConfig").onclick = (ev) => { ev.stopPropagation(); $("config").classList.toggle("aberto"); };
+  document.addEventListener("click", (ev) => { if (!$("config").contains(ev.target)) $("config").classList.remove("aberto"); });
+  $("btnPausaTela").onclick = () => { telaPausada = !telaPausada; $("btnPausaTela").style.color = telaPausada ? "var(--alerta)" : ""; };
+  $("btnTelaCheia").onclick = () => $("telaBox").requestFullscreen && $("telaBox").requestFullscreen();
+  // o minimapa é o mapa inteiro (32 px por tile): rola até o jogador
+  $("mapaImg").onload = () => {
+    const i = $("mapaImg"), caixa = i.parentElement;
+    if (!posicaoMapa || !i.naturalWidth) return;
+    const escala = i.clientWidth / i.naturalWidth;
+    caixa.scrollTo({ top: (posicaoMapa.y * 32 + 16) * escala - caixa.clientHeight / 2, behavior: "smooth" });
+  };
+  $("tela").onerror = () => { $("tela").style.opacity = .25; };
+  $("tela").onload = () => { $("tela").style.opacity = 1; };
+  function atualizarTela() { if (!telaPausada && $("optTela").checked && !document.hidden) $("tela").src = "/tela.png?" + Date.now(); }
+
+  // a seção visível acende na lateral
+  const links = [...document.querySelectorAll("#lateral a")];
+  function marcarSecao() {
+    let ativo = links[0];
+    for (const a of links) { const alvo = document.querySelector(a.getAttribute("href")); if (alvo && alvo.getBoundingClientRect().top <= innerHeight * .35) ativo = a; }
+    links.forEach((a) => a.classList.toggle("ativo", a === ativo));
+  }
+  addEventListener("scroll", marcarSecao, { passive: true }); marcarSecao();
+
   atualizar(); atualizarEventos(); atualizarTela();
   setInterval(atualizar, 1500); setInterval(atualizarEventos, 3000); setInterval(atualizarTela, 800);
 </script>

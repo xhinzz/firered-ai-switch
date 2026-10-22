@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FireRed AI · Switch</title>
+<meta name="description" content="An AI that beat Pokémon FireRed on a real Nintendo Switch: capture card in, emulated Bluetooth controller out. Replay the whole campaign.">
+<meta property="og:title" content="FireRed AI · Switch">
+<meta property="og:description" content="An AI that beat Pokémon FireRed on a real Nintendo Switch. Replay the whole campaign.">
+<meta property="og:image" content="img/painel.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='10' fill='%23fff'/%3E%3Cpath d='M2 12a10 10 0 0 1 20 0z' fill='%23e53935'/%3E%3Cpath d='M2 12h20' stroke='%23111' stroke-width='2'/%3E%3Ccircle cx='12' cy='12' r='3.2' fill='%23fff' stroke='%23111' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,400;0,500;0,600;0,700;0,800;1,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="i-bola" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#fff"/><path d="M2 12a10 10 0 0 1 20 0z" fill="#e53935"/><path d="M2 12h20" stroke="#111" stroke-width="2"/><circle cx="12" cy="12" r="3.2" fill="#fff" stroke="#111" stroke-width="2"/><circle cx="12" cy="12" r="10" fill="none" stroke="#111" stroke-width="1.5"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-pausa" viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/><rect x="14" y="5" width="4" height="14" rx="1" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-volta" viewBox="0 0 24 24"><path d="m11 17-5-5 5-5M18 17l-5-5 5-5"/></symbol>
+    <symbol id="i-avanca" viewBox="0 0 24 24"><path d="m13 17 5-5-5-5M6 17l5-5-5-5"/></symbol>
+    <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-rota" viewBox="0 0 24 24"><circle cx="6" cy="19" r="3"/><circle cx="18" cy="5" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/></symbol>
+    <symbol id="i-cerebro" viewBox="0 0 24 24"><path d="M9 4a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 6 1V5a3 3 0 0 0-3-1zM15 4a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-6 1"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.9a3.4 3.4 0 0 0-.9-2.6c3.1-.4 6.4-1.6 6.4-7A5.4 5.4 0 0 0 20 4.8 5 5 0 0 0 19.9 1S18.7.6 16 2.5a13.4 13.4 0 0 0-7 0C6.3.6 5.1 1 5.1 1A5 5 0 0 0 5 4.8a5.4 5.4 0 0 0-1.5 3.7c0 5.4 3.3 6.6 6.4 7a3.4 3.4 0 0 0-.9 2.6V22"/></symbol>
+  </defs>
+</svg>
+
+<header class="topo">
+  <div class="envoltorio">
+    <a class="logo" href="#"><svg width="30" height="30"><use href="#i-bola"/></svg><b>FireRed <span>AI</span></b></a>
+    <nav>
+      <a href="#replay" data-t="nav.replay">Replay</a>
+      <a href="#como" data-t="nav.como">How it works</a>
+      <a href="#posjogo" data-t="nav.pos">Post-game</a>
+      <a href="#engenharia" data-t="nav.eng">Engineering</a>
+      <a href="https://github.com/xhinzz/firered-ai-switch">GitHub</a>
+    </nav>
+    <div class="idioma"><button data-lang="en">EN</button><button data-lang="pt">PT</button></div>
+  </div>
+</header>
+
+<section class="abertura">
+  <svg class="paisagem" viewBox="0 0 1200 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="ceu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#08090c"/><stop offset=".55" stop-color="#2a0b09"/><stop offset="1" stop-color="#6e1d12"/></linearGradient>
+      <radialGradient id="sol" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffcf6b"/><stop offset=".5" stop-color="#ff7a3d" stop-opacity=".9"/><stop offset="1" stop-color="#ff7a3d" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="1200" height="520" fill="url(#ceu)"/>
+    <circle cx="900" cy="430" r="190" fill="url(#sol)" opacity=".75"/>
+    <path d="M0 520 140 360l90 70 130-150 160 170 110-90 150 130 120-110 170 120 130-80v150z" fill="#160706" opacity=".95"/>
+    <path d="M0 520 180 440l120 40 160-90 180 110 150-70 190 80 120-50 100 40v40z" fill="#08090c"/>
+  </svg>
+  <div class="envoltorio">
+    <div>
+      <span class="selo"><svg width="16" height="16"><use href="#i-bola"/></svg><span data-t="hero.selo">Real Nintendo Switch · no emulator · no ROM</span></span>
+      <h1 data-t="hero.titulo" data-html>An AI that beat <em>Pokémon FireRed</em> on a real Switch.</h1>
+      <p class="sub" data-t="hero.sub">It sees the game through a capture card and plays with an emulated Bluetooth controller. A language model plans; deterministic code walks, battles and reads every pixel. Below, the whole campaign replayed from its own diary.</p>
+      <div class="botoes">
+        <a class="btn principal" href="#replay"><svg class="ic"><use href="#i-play"/></svg><span data-t="hero.cta">Watch the replay</span></a>
+        <a class="btn secundario" href="https://github.com/xhinzz/firered-ai-switch"><svg class="ic"><use href="#i-github"/></svg><span data-t="hero.codigo">Source code</span></a>
+      </div>
+    </div>
+    <figure class="console">
+      <img class="px" src="img/campanha.gif" alt="Frames captured from the Switch during the campaign">
+      <figcaption data-t="hero.legenda">Frames captured from the console during the run</figcaption>
+    </figure>
+  </div>
+</section>
+
+<div class="envoltorio">
+  <div class="numeros">
+    <div class="numero"><b id="nEpisodios">597</b><span data-t="n.episodios">agent episodes</span></div>
+    <div class="numero"><b id="nAcoes">5,792</b><span data-t="n.acoes">tool actions</span></div>
+    <div class="numero"><b>8/8</b><span data-t="n.insignias">badges + Champion</span></div>
+    <div class="numero"><b>7</b><span data-t="n.lendarios">shiny legendaries</span></div>
+    <div class="numero"><b>160</b><span data-t="n.mapas">maps visited</span></div>
+    <div class="numero"><b>36</b><span data-t="n.testes">offline tests</span></div>
+  </div>
+</div>
+
+<section class="bloco" id="replay">
+  <div class="envoltorio">
+    <div class="titulo-secao">
+      <div><span class="etiqueta" data-t="replay.etiqueta">Interactive replay</span><h2 data-t="replay.titulo">Six days of play, event by event</h2>
+        <p data-t="replay.sub">Every point is a real event from the agent's log: where it stood, what it decided, the team it carried. Drag the timeline or press play; the markers jump to badges, story milestones and captures. The agent's own notes are shown as it wrote them, in Portuguese.</p></div>
+    </div>
+    <div class="replay">
+      <div class="card">
+        <div class="palco"><canvas id="palco" width="640" height="480"></canvas><span class="lugar" id="lugar">—</span><span class="relogio" id="relogio">—</span></div>
+        <div class="controles">
+          <button id="voltar" title="Previous milestone"><svg class="ic"><use href="#i-volta"/></svg></button>
+          <button id="tocar" class="tocar" title="Play / pause"><svg class="ic" id="icTocar"><use href="#i-play"/></svg></button>
+          <button id="avancar" title="Next milestone"><svg class="ic"><use href="#i-avanca"/></svg></button>
+          <select id="velocidade"><option value="4">1×</option><option value="15" selected>4×</option><option value="60">16×</option><option value="240">64×</option></select>
+          <span class="info" id="info">—</span>
+        </div>
+        <div class="trilha"><div class="marcas" id="marcas"></div><input type="range" id="linha" min="0" max="1" value="0"></div>
+        <div class="legenda"><span><i style="background:var(--dourado)"></i><span data-t="leg.insignia">badge</span></span><span><i style="background:#d7d3cd"></i><span data-t="leg.marco">story milestone</span></span><span><i style="background:var(--ok)"></i><span data-t="leg.captura">capture</span></span></div>
+        <div class="rot" style="margin-top:18px"><span data-t="lado.feed">Event log</span><span id="nEventos"></span></div><ul class="feed" id="feed"><li class="carregando" data-t="carregando">Loading the campaign…</li></ul>
+      </div>
+      <div class="painel-lado">
+        <div class="card"><div class="rot"><span data-t="lado.time">Team</span><span id="nivelTime"></span></div><div class="time" id="time"></div></div>
+        <div class="card"><div class="rot"><span data-t="lado.insignias">Badges</span><span id="nInsignias">0/8</span></div><div class="insignias-linha" id="insignias"></div></div>
+        <div class="card"><div class="rot"><span data-t="lado.pensando">Model's latest decision</span></div><div class="pensamento" id="pensamento">—</div>
+          <div class="rot" style="margin-top:12px"><span data-t="lado.objetivo">Objective</span></div><div class="objetivo" id="objetivo">—</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="como">
+  <div class="envoltorio">
+    <div class="titulo-secao"><div><span class="etiqueta" data-t="como.etiqueta">How it works</span><h2 data-t="como.titulo">Pixels in, button presses out</h2>
+      <p data-t="como.sub">The only sensor is the 240×160 picture and the only output is a controller. Everything else is reconstructed from the game's own decompiled source.</p></div></div>
+    <div class="camadas">
+      <div class="card camada"><div class="icone"><svg class="ic"><use href="#i-olho"/></svg></div><h3 data-t="c1.t">Perception</h3>
+        <p data-t="c1.p">The frame is matched against every map rendered from the pret/pokefirered decomp to get the exact tile; text is read with the game's own font; species are recognised by sprite.</p><code>fireredia.percepcao</code></div>
+      <div class="card camada"><div class="icone"><svg class="ic"><use href="#i-rota"/></svg></div><h3 data-t="c2.t">Skills</h3>
+        <p data-t="c2.p">Path finding across the whole world (doors, ledges, Surf, Strength, ice) runs closed-loop, checked frame by frame. Wild and trainer battles, menus and the PC run without the model.</p><code>fireredia.habilidades</code></div>
+      <div class="card camada"><div class="icone"><svg class="ic"><use href="#i-cerebro"/></svg></div><h3 data-t="c3.t">Agent</h3>
+        <p data-t="c3.p">A strategist model writes the plan; an executor plays it through ~60 tools. Memory is an append-only log, so every episode starts small and nothing is forgotten.</p><code>fireredia.agente</code></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <div class="fluxo"><span>Switch</span><i>→</i><span>HDMI · OBS</span><i>→</i><span data-t="f.percepcao">perception</span><i>→</i><span data-t="f.habilidades">skills ⇄ agent</span><i>→</i><span data-t="f.controle">NXBT in WSL</span><i>→</i><span>Bluetooth</span><i>→</i><span>Switch</span></div>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <figure class="figura"><img class="px" src="img/localizacao.png" alt="Localisation">
+        <figcaption data-t="fig.loc">Localisation: the Switch frame (left) and the window found in the map rendered from the decomp; the red square is the player's tile.</figcaption></figure>
+    </div>
+    <div class="card" style="margin-top:16px">
+      <figure class="figura"><img src="img/painel.png" alt="Dashboard">
+        <figcaption data-t="fig.painel">The live dashboard: screen, objective and plan, alerts, journey progress, team, bag, Pokédex, current map with the agent's trail and the full event log.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="posjogo">
+  <div class="envoltorio">
+    <div class="titulo-secao"><div><span class="etiqueta" data-t="pos.etiqueta">Post-game</span><h2 data-t="pos.titulo">Seven legendaries, all shiny</h2>
+      <p data-t="pos.sub">After the Champion, scripted missions and arbitrary code execution (code typed into PC box names through the Mail glitch) caught and recoloured them. Every trigger saves first and checks the boxes on screen.</p></div></div>
+    <div class="lendarios" id="lendarios"></div>
+    <div class="duas">
+      <figure class="card figura"><img class="px" src="img/plano_deoxys.png" alt="Deoxys plan">
+        <figcaption data-t="fig.deoxys">The Deoxys triangle: 11 touches, each within the game's step budget (sDeoxysStepCaps). Planned by search, solved on the first try.</figcaption></figure>
+      <figure class="card figura"><img class="px" src="img/plano_gelo.png" alt="Ice plan">
+        <figcaption data-t="fig.gelo">Icefall Cave: four slides on the ice floor to reach the HM07 ladder, found by a BFS over stopping points.</figcaption></figure>
+    </div>
+    <div class="galeria">
+      <figure class="card figura"><img class="px" src="img/deoxys_shiny.png" alt=""><figcaption data-t="g1">Shiny Deoxys, star checked on the summary page</figcaption></figure>
+      <figure class="card figura"><img class="px" src="img/hooh_navel_rock.png" alt=""><figcaption data-t="g2">Navel Rock summit after Ho-Oh</figcaption></figure>
+      <figure class="card figura"><img class="px" src="img/ace_nomes_das_caixas.png" alt=""><figcaption data-t="g3">The ACE code, written as PC box names 1–11</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section class="bloco" id="engenharia">
+  <div class="envoltorio">
+    <div class="titulo-secao"><div><span class="etiqueta" data-t="eng.etiqueta">Engineering notes</span><h2 data-t="eng.titulo">What real hardware teaches</h2></div></div>
+    <div class="lista-eng">
+      <div class="card"><h3 data-t="e1.t">Lost inputs are normal</h3><p data-t="e1.p">Bluetooth drops button presses, mostly during animations. Every multi-step action checks the screen before it commits: battle cursor, PC panel, keyboard page and cursor.</p></div>
+      <div class="card"><h3 data-t="e2.t">The map data isn't the whole truth</h3><p data-t="e2.p">Scripts swap metatiles and flags hide NPCs. The navigator models script-opened doors and takes the list of NPCs the story already moved.</p></div>
+      <div class="card"><h3 data-t="e3.t">Reproduce the engine, not intuition</h3><p data-t="e3.p">Leaving Surf only works onto elevation 3 (CanStopSurfing); ice slides until it hits something; the Deoxys triangle has a step budget. Each rule became code and a test.</p></div>
+      <div class="card"><h3 data-t="e4.t">Tested offline</h3><p data-t="e4.p">36 tests run without a console: planning on synthetic grids, navigation on the real decomp maps, perception on frames captured from the Switch. CI runs them on Windows.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="envoltorio">
+    <p data-t="rodape">Built with the pret/pokefirered decompilation, NXBT and E-Sh4rk's CodeGenerator. Pokémon and FireRed are trademarks of Nintendo, Game Freak and Creatures; this project ships no game code, and the images come from the author's own console and from the decomp.</p>
+    <p><a href="https://github.com/xhinzz/firered-ai-switch">github.com/xhinzz/firered-ai-switch</a> · MIT</p>
+  </div>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

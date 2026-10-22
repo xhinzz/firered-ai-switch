@@ -18,10 +18,10 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
 
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from fireredia import caminhos, estado
-from fireredia.mundo import conhecimento, roteiro
+from fireredia.mundo import conhecimento, mapa, roteiro
 from fireredia.mundo.mapa import RAIZ
 from fireredia.percepcao import olhos
 
@@ -71,11 +71,30 @@ def _arquivo_item():
     return res
 
 
+@lru_cache
+def _icones_itens():
+    """item -> (ícone, paleta): itens dividem desenhos (Max Potion usa o da Large Potion com outra paleta)."""
+    tabela = (RAIZ / "src/data/item_icon_table.h").read_text(encoding="utf-8")
+    snake = lambda nome: re.sub(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])", "_", nome).lower()  # noqa: E731
+    return {
+        item.lower(): (snake(icone), snake(paleta))
+        for item, icone, paleta in re.findall(
+            r"\[ITEM_(\w+)\]\s*=\s*\{gItemIcon_(\w+), gItemIconPalette_(\w+)\}", tabela
+        )
+    }
+
+
 @lru_cache(maxsize=512)
 def sprite_item(nome):
     arq = _arquivo_item().get(estado.Estado._chave_item(nome))
-    png = arq and GRAFICOS / "items" / "icons" / f"{arq}.png"
-    return _rgba(png, GRAFICOS / "items" / "icon_palettes" / f"{arq}.pal") if png and png.exists() else None
+    if not arq:
+        return None
+    icone, paleta = _icones_itens().get(arq, (arq, arq))
+    png = GRAFICOS / "items" / "icons" / f"{icone}.png"
+    if not png.exists():
+        icone = paleta = arq
+        png = GRAFICOS / "items" / "icons" / f"{arq}.png"
+    return _rgba(png, GRAFICOS / "items" / "icon_palettes" / f"{paleta}.pal") if png.exists() else None
 
 
 @lru_cache(maxsize=64)
@@ -160,6 +179,46 @@ def ultimos_eventos(n):
     return [json.loads(linha) for linha in linhas if linha.strip()]
 
 
+def _rastro(mapa_id, maximo=400):
+    """Posições recentes da IA no mapa atual, em ordem, até a última vez que ela entrou nele."""
+    pontos = []
+    for e in reversed(ultimos_eventos(maximo)):
+        local = e.get("local")
+        if not isinstance(local, dict) or "x" not in local:  # eventos antigos guardavam o local como texto
+            continue
+        if local.get("mapa") != mapa_id:
+            break
+        pontos.append((local["x"], local["y"]))
+    return pontos[::-1]
+
+
+@lru_cache(maxsize=16)
+def _mapa_png(mapa_id, rastro):
+    """Mapa atual desenhado do decomp, sem a borda dos vizinhos, com o rastro recente e o jogador."""
+    borda = mapa.BORDA * 16
+    img = Image.fromarray(mapa.renderizar_mapa(mapa_id)).convert("RGB")
+    img = img.crop((borda, borda, img.width - borda, img.height - borda))
+    img = img.resize((img.width * 2, img.height * 2), Image.NEAREST)
+    d = ImageDraw.Draw(img)
+    centros = [(x * 32 + 16, y * 32 + 16) for x, y in rastro]
+    if len(centros) > 1:
+        d.line(centros, fill=(255, 196, 0), width=6, joint="curve")
+    if centros:
+        x, y = centros[-1]
+        d.ellipse((x - 13, y - 13, x + 13, y + 13), fill=(229, 57, 53), outline=(255, 255, 255), width=4)
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return buf.getvalue()
+
+
+def mapa_png():
+    local = estado.ler_disco().get("local") or {}
+    if not local.get("mapa"):
+        return None
+    rastro = _rastro(local["mapa"]) or [(local["x"], local["y"])]
+    return _mapa_png(local["mapa"], tuple(rastro[-60:]))
+
+
 _tela = {"t": 0.0, "png": b""}
 _trava_tela = threading.Lock()
 
@@ -199,6 +258,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(ultimos_eventos(int(parse_qs(url.query).get("n", ["300"])[0])))
             if url.path == "/tela.png":
                 return self._enviar(tela_png(), "image/png")
+            if url.path == "/mapa.png":
+                png = mapa_png()
+                return self._enviar(png, "image/png") if png else self._enviar(b"", "text/plain", 404)
             if partes[0] == "sprite" and len(partes) == 3:
                 tipo, nome = partes[1], partes[2].removesuffix(".png")
                 png = {"pokemon": sprite_pokemon, "item": sprite_item, "treinador": sprite_treinador}.get(
