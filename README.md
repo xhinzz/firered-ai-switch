@@ -192,8 +192,9 @@ A few things that only show up on real hardware or in the game's source:
 - [E-Sh4rk's CodeGenerator](https://e-sh4rk.github.io/CodeGenerator/) and the FRLG ACE research by Sleipnir17,
   PapaJefé and others: the ACE codes and the setup route ([notes, in Portuguese](docs/ace-pesquisa.md)).
 
-Pokémon and FireRed are trademarks of Nintendo, Game Freak and Creatures. This project ships no game code or
-assets; the decomp is downloaded from its own repository, and the screenshots are from the author's own console.
+Pokémon and FireRed are trademarks of Nintendo, Game Freak and Creatures. This project ships no game code or ROM;
+the decomp is downloaded from its own repository. The screenshots and the sprites on the site are theirs and are not
+covered by the MIT license; see [NOTICE](NOTICE.md).
 
 ## License
 
